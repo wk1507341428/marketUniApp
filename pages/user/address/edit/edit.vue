@@ -58,129 +58,163 @@
 </template>
 
 <script>
-	import mpvueCityPicker from '@/components/mpvue-citypicker/mpvueCityPicker.vue'
-	export default {
-		components: {
-			mpvueCityPicker
+import mpvueCityPicker from '@/components/mpvue-citypicker/mpvueCityPicker.vue'
+import * as API from '../../../../request/index'
+export default {
+	components: {
+		mpvueCityPicker
+	},
+	data() {
+		return {
+			editType:'edit',
+			id:'',
+			name:'',
+			tel:'',
+			detailed:'',
+			isDefault:false,
+			cityPickerValue: [0, 0, 1],
+			themeColor: '#007AFF',
+			region:{label:"请点击选择地址",value:[],cityCode:""}
+		};
+	},
+	methods: {
+		onCancel(e) {
+			console.log(e)
 		},
-		data() {
-			return {
-				editType:'edit',
-				id:'',
-				name:'',
-				tel:'',
-				detailed:'',
-				isDefault:false,
-				cityPickerValue: [0, 0, 1],
-				themeColor: '#007AFF',
-				region:{label:"请点击选择地址",value:[],cityCode:""}
-			};
+		chooseCity() {
+			this.$refs.mpvueCityPicker.show()
 		},
-		methods: {
-			onCancel(e) {
-				console.log(e)
-			},
-			chooseCity() {
-				this.$refs.mpvueCityPicker.show()
-			},
-			onConfirm(e) {
-				this.region = e;
-				this.cityPickerValue = e.value;
-			},
-			isDefaultChange(e){
-				this.isDefault = e.detail.value;
-			},
-			del(){
-				uni.showModal({
-					title: '删除提示',
-					content: '你将删除这个收货地址',
-					success: (res)=>{
-						if (res.confirm) {
-							uni.setStorage({
-								key:'delAddress',
-								data:{id:this.id},
-								success() {
-									uni.navigateBack();
-								}
-							})
-						} else if (res.cancel) {
-							console.log('用户点击取消');
-						}
+		onConfirm(e) {
+			this.region = e
+			this.cityPickerValue = e.value;
+		},
+		isDefaultChange(e){
+			this.isDefault = e.detail.value;
+		},
+		del(){
+			uni.showModal({
+				title: '删除提示',
+				content: '你将删除这个收货地址',
+				success: async (res)=>{
+					if (res.confirm) {
+                        const { id } = this.$data
+                        let response = await API.delAddress(id)
+                        uni.showToast({title:'删除成功'})
+                        setTimeout(()=>{
+                            uni.navigateBack()
+                        },500)
+					} else if (res.cancel) {
+						console.log('用户点击取消')
 					}
-				});
-				
-			},
-			save(){
-				let data={"name":this.name,"head":this.name.substr(0,1),"tel":this.tel,"address":{"region":this.region,"detailed":this.detailed},"isDefault":this.isDefault}
-				if(this.editType=='edit'){
-					data.id = this.id
 				}
-				if(!data.name){
-					uni.showToast({title:'请输入收件人姓名',icon:'none'});
-					return ;
-				}
-				if(!data.tel){
-					uni.showToast({title:'请输入收件人电话号码',icon:'none'});
-					return ;
-				}
-				if(!data.address.detailed){
-					uni.showToast({title:'请输入收件人详细地址',icon:'none'});
-					return ;
-				}
-				if(data.address.region.value.length==0){
-					uni.showToast({title:'请选择收件地址',icon:'none'});
-					return ;
-				}
-				uni.showLoading({
-					title:'正在提交'
-				})
-				//实际应用中请提交ajax,模板定时器模拟提交效果
-				setTimeout(()=>{
-					uni.setStorage({
-						key:'saveAddress',
-						data:data,
-						success() {
-							uni.hideLoading();
-							uni.navigateBack();
-						}
-					})
-				},300)
-				
-				
+			})
+        },
+		async save(){
+            let { name, tel, isDefault, region, detailed, editType, id } = this.$data
+
+            if( !name ){
+                uni.showToast({title:'请输入收件人姓名',icon:'none'});
+				return
+            }
+			if(!tel){
+				uni.showToast({title:'请输入收件人电话号码',icon:'none'});
+				return
 			}
-		},
-		onLoad(e) {
-			//获取传递过来的参数
-			
-			this.editType = e.type;
-			if(e.type=='edit'){
-				uni.getStorage({
-					key:'address',
-					success: (e) => {
-						this.id = e.data.id;
-						this.name = e.data.name;
-						this.tel = e.data.tel;
-						this.detailed = e.data.address.detailed;
-						this.isDefault = e.data.isDefault;
-						this.cityPickerValue = e.data.address.region.value;
-						this.region = e.data.address.region;
-					}
-				})
+			if(!detailed){
+				uni.showToast({title:'请输入收件人详细地址',icon:'none'});
+				return
 			}
-			
-		},
-		onBackPress() {
-			if (this.$refs.mpvueCityPicker.showPicker) {
-				this.$refs.mpvueCityPicker.pickerCancel();
-				return true;
-			}
-		},
-		onUnload() {
-			if (this.$refs.mpvueCityPicker.showPicker) {
-				this.$refs.mpvueCityPicker.pickerCancel()
-			}
+			if(region.value.length==0){
+				uni.showToast({title:'请选择收件地址',icon:'none'});
+				return
+            }
+            
+            const { cityCode, label } = region
+
+            // addressDetail (string): 详细地址 ,
+            // customerId (string): 客户编号 ,
+            // id (integer, optional): 主键 ,
+            // isDefault (integer, optional): 是否默认 ,
+            // provinceId (string): 省份ID ,
+            // provinceName (string): 省份名称 ,
+            // receviePhone (string): 收件人手机 ,
+            // recevierName (string): 收件人姓名
+
+            let response = {}
+
+            // 新增地址
+            if( editType === "add" ){
+                response = await API.addAddress({
+                    addressDetail: detailed,
+                    isDefault: Number(isDefault),
+                    provinceId: cityCode,
+                    provinceName: label,
+                    receviePhone: tel,
+                    recevierName: name,
+                    // TODO
+                    customerId: "c123123123"
+                })
+
+                uni.showToast({title:'添加成功'})
+                setTimeout(()=>{
+                    uni.navigateBack()
+                },1000)
+            }
+            // 编辑地址
+            else if( editType === 'edit' ){
+                response = await API.editAddress({
+                    addressDetail: detailed,
+                    isDefault: Number(isDefault),
+                    provinceId: cityCode,
+                    provinceName: label,
+                    receviePhone: tel,
+                    recevierName: name,
+                    customerId: "c123123123",
+                    id
+                })
+                uni.showToast({title:'编辑成功'})
+                setTimeout(()=>{
+                    uni.navigateBack()
+                },1000)
+            }
 		}
-	};
+	},
+	onLoad(e) {
+		this.editType = e.type;
+		if(e.type == 'edit'){
+			uni.getStorage({
+				key:'address',
+				success: (e) => {
+                    const { addressDetail, customerId, id, isDefault, provinceId, provinceName, receviePhone, recevierName } = e.data
+					this.id = id
+					this.name = recevierName
+					this.tel = receviePhone
+					this.detailed = addressDetail
+					this.isDefault = isDefault
+                    this.cityPickerValue = [18,2,1]
+                    // TODO  地址这一刻还需要一个字段来控制picker
+					this.region = {
+                        label: provinceName,
+                        value: [18,2,1],
+                        cityCode: provinceId
+                    }
+				}
+			})
+		}
+		
+	},
+	onBackPress() {
+		if (this.$refs.mpvueCityPicker.showPicker) {
+			this.$refs.mpvueCityPicker.pickerCancel();
+			return true;
+		}
+	},
+	onUnload() {
+		if (this.$refs.mpvueCityPicker.showPicker) {
+			this.$refs.mpvueCityPicker.pickerCancel()
+		}
+	}
+};
 </script>
 <style lang="scss">
 

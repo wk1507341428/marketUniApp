@@ -24,7 +24,6 @@
 </template>
 
 <script>
-	import md5 from "@/common/SDK/md5.min.js";
 	export default {
 		data() {
 			return {
@@ -104,7 +103,7 @@
 								let row = res.data[i];
 								if(row.username==this.phoneNumber){
 									//修改记录，密码md5
-									res.data[i].passwd = md5(this.passwd);
+									res.data[i].passwd = (this.passwd);
 									uni.setStorage({
 										key: 'UserList',
 										data: res.data,

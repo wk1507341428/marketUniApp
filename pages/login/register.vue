@@ -26,7 +26,6 @@
 </template>
 
 <script>
-	import md5 from "@/common/SDK/md5.min.js";
 	export default {
 		data() {
 			return {
@@ -100,7 +99,7 @@
 						key: 'UserList', 
 						success:(res)=>{
 							//增加记录，密码md5
-							res.data.push({username:this.phoneNumber,passwd:md5(this.passwd)})
+							res.data.push({username:this.phoneNumber,passwd: (this.passwd)})
 							uni.setStorage({
 								key: 'UserList',
 								data: res.data,
@@ -119,7 +118,7 @@
 							//新建UserList
 							uni.setStorage({
 								key: 'UserList',
-								data: [{username:this.phoneNumber,passwd:md5(this.passwd)}],
+								data: [{username:this.phoneNumber,passwd:(this.passwd)}],
 								success: function () {
 									uni.hideLoading()
 									uni.showToast({title: '注册成功',icon:"success"});

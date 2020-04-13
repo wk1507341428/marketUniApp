@@ -33,7 +33,6 @@
 </template>
 
 <script>
-	import md5 from "@/common/SDK/md5.min.js";
 	export default {
 		data() {
 			return {
@@ -132,7 +131,7 @@
 				})
 				//模板示例比对本地储存的用户信息，实际使用中请替换为上传服务器比对。
 				setTimeout(()=>{
-					let md5PW = md5(this.passwd)
+					let md5PW = this.passwd
 					uni.getStorage({
 						key: 'UserList',
 						success: (res)=>{

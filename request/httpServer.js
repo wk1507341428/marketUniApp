@@ -1,3 +1,7 @@
+import config from '@/config'
+import constants from '@/constants'
+import * as API from '@/request'
+import store from '@/store'
 const GET = 'GET'
 const POST = 'POST'
 
@@ -89,14 +93,14 @@ class Call {
         const url = this.posUrl(this.path) ? `${this.path}` :`${this.baseUrl}${this.path}`
 
         return new Promise((resolve, reject) => {
-			
+
+            const token =  uni.getStorageSync("TOKEN")
             const request = {
                 url,
                 method: this.method,
                 data: this.body,
                 params: this.params,
-                headers: this.headers,
-                baseUrl: this.baseUrl,
+                header: Object.assign(this.headers,{token}),
             }
 
             if (this.useLoading) {
@@ -124,10 +128,27 @@ class Call {
                 }
 			
 
-                const { code } = response
-                if (!this.checkCode || this.checkCode.includes(code)) {
+                const { success } = response
+                if ( success ) {
                     resolve(response)
                 } else {
+                    if(response.errCode == 401){
+                        return new Promise((res, rej) => { 
+                            uni.login({
+                                provider: "weixin",
+                                success: async (result) => {
+                                    const response = await API.login({
+                                        code: result.code,
+                                        merchantId: config.merchantId
+                                    })
+                
+                                    uni.setStorageSync(constants.TOKEN,response.data.token)
+                                    uni.setStorageSync(constants.CUSTOMERID,response.data.customerId)
+                                    return this.exec()
+                                }
+                            })
+                        })
+                    }
                     if (!this.server_error && typeof this.onServerError === 'function') {
                         this.onServerError(response)
                     } else {

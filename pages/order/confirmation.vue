@@ -8,30 +8,30 @@
 			<view class="right">
 				<view class="tel-name">
 					<view class="name">
-						{{recinfo.name}}
+						{{recinfo.recevierName}}
 					</view>
 					<view class="tel">
-						{{recinfo.tel}}
+						{{recinfo.receviePhone}}
 					</view>
 				</view>
 				<view class="addres">
-					{{recinfo.address.region.label}}
-					{{recinfo.address.detailed}}
+					{{recinfo.provinceName}}
+					{{recinfo.addressDetail}}
 				</view>
 			</view>
 		</view>
 		<!-- 购买商品列表 -->
 		<view class="buy-list">
-			<view class="row" v-for="(row,index) in buylist" :key="index">
+			<view class="row" v-for="(row,index) in buylistCur" :key="index">
 				<view class="goods-info">
 					<view class="img">
-						<image :src="row.img"></image>
+						<image src="/static/img/goods/p1.jpg"></image>
 					</view>
 					<view class="info">
-						<view class="title">{{row.name}}</view>
+						<view class="title">{{row.productName}}</view>
 						<view class="spec">选择{{row.spec}} 数量:{{row.number}}</view>
 						<view class="price-number">
-							<view class="price">￥{{row.price*row.number}}</view>
+							<view class="price">￥{{row.price * row.number}}</view>
 							<view class="number">
 								
 							</view>
@@ -55,7 +55,7 @@
 					备注 :
 				</view>
 				<view class="right">
-					<input placeholder="选填,备注内容" v-model="note" />
+					<input placeholder="选填,备注内容" v-model="remark" />
 				</view>
 			</view>
 		</view>
@@ -77,14 +77,14 @@
 					￥+{{freight|toFixed}}
 				</view>
 			</view>
-			<view class="row">
+			<!-- <view class="row">
 				<view class="nominal">
 					积分抵扣
 				</view>
 				<view class="content">
 					￥-{{deduction|toFixed}}
 				</view>
-			</view>
+			</view> -->
 		</view>
 		<view class="blck">
 			
@@ -99,107 +99,164 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				buylist:[],		//订单列表
-				goodsPrice:0.0,	//商品合计价格
-				sumPrice:0.0,	//用户付款价格
-				freight:12.00,	//运费
-				note:'',		//备注
-				int:1200,		//抵扣积分
-				deduction:0,	//抵扣价格
-				recinfo:{id:1,name:"大黑哥",head:"大",tel:"18816881688",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:true}
+import * as API from '../../request'
+import { mapState } from 'vuex'
+import config from '../../config'
+export default {
+	data() {
+		return {
+			goodsPrice: 0,	//商品合计价格
+			freight:12.00,	//运费
+			remark:'',		//备注
+			int:1200,		//抵扣积分
+			deduction:0,	//抵扣价格
+            
+            ids: [],     // 商品Id  
+            goodsDetail: {},    // 订单商品信息
+            buylistCur: [],		//订单列表 处理后的数据
+            recinfo: {},     // 默认地址 or 选择后的地址
+		};
+    },
+    computed:{
+        ...mapState(["BUYLIST","SELECT_ADDRESS"]),
+        // 用户付款价格
+        sumPrice(){
+            return this.goodsPrice + this.freight
+        }
+    },
+	onShow() {
+        const SELECT_ADDRESS = this.SELECT_ADDRESS
+        // 更新选择的地址
+        if( JSON.stringify(SELECT_ADDRESS) != "{}" ){
+            this.recinfo = SELECT_ADDRESS
+        }
+    },
+    onLoad(){
+        const BUYLIST = this.BUYLIST
 
-			};
-		},
-		onShow() {
-			//页面显示时，加载订单信息
-			uni.getStorage({
-				key:'buylist',
-				success: (ret) => {
-					this.buylist = ret.data;
-					this.goodsPrice=0;
-					//合计
-					let len = this.buylist.length;
-					for(let i=0;i<len;i++){
-						this.goodsPrice = this.goodsPrice + (this.buylist[i].number*this.buylist[i].price);
-					}
-					this.deduction = this.int/100;
-					this.sumPrice = this.goodsPrice-this.deduction+this.freight;
-				}
-			});
-			uni.getStorage({
-				key:'selectAddress',
-				success: (e) => {
-					this.recinfo = e.data;
-					uni.removeStorage({
-						key:'selectAddress'
-					})
-				}
-			})
-		},
-		onHide() {
+        if( BUYLIST && BUYLIST.length == 0 ){
+            uni.showModal({
+                title: `错误提示`,
+                content: "非法进入",
+                showCancel: false
+            })
+            return
+        }
+
+        this.$nextTick(()=>{
+            this.init()
+        })
+    },
+	filters: {
+		toFixed:function(x) {
+			return parseFloat(x).toFixed(2)
+		}
+	},
+	methods: {
+        init(){
+            this.GetProductDetail()
+            this.getAddressDefault()
+        },
+        // 查询商品详情并且组织数据
+        GetProductDetail(){
+            const BUYLIST = this.BUYLIST
+            Array.isArray(BUYLIST) && BUYLIST.map(async item => {
+                const { id, spec, number } = item
+                const response = await API.GetProductDetail(id)
+                let { data } = response
+                data.number = number
+                data.spec = spec
+                // 处理后的数据
+                this.buylistCur.push(data)
+                // 计算总金额
+                this.goodsPrice += data.price * data.number
+            })
+        },
+        // 获取默认地址
+        async getAddressDefault(){
+            let response = await API.getAddressList()
+            const { data } = response
+            // 这里因为你不知道哪个是默认地址，所以没办法，遍历一下吧
+            let defaultAddress = Array.isArray(data) && data.filter(item => item.isDefault)[0]
+            this.recinfo = defaultAddress
+        },
+        // 整合参数为提交
+        getParams(){
+
+            // {
+            //     "addressId": 0,      // 收货地址
+            //     "customerId": "string",  // 用户编码
+            //     "deliveryFee": 0,    // 运费
+            //     "items": [
+            //         {
+            //         "itemId": "string",      // 子单编号
+            //         "productCode": "string",     // 
+            //         "productName": "string",
+            //         "productNum": 0,
+            //         "productPrice": 0,
+            //         "properties": [
+            //             {
+            //             "propName": "string",    // 规格名称：尺寸
+            //             "propValue": "string"    // 规格描述：xl,xxl
+            //             }
+            //         ]
+            //         }
+            //     ],
+            //     "merchantId": "string",  // 商家编码
+            //     "orderAmount": 0,        // 订单金额 ,
+            //     "orderId": "string",     // 订单id
+            //     "orderStatus": "string", // 订单状态
+            //     "remark": "string"
+            // }
+            const { freight, remark, buylistCur, recinfo } = this.$data
+            const sumPrice = this.sumPrice
+            const { customerId, merchantId } = config
+
+            let items = []
+
+            buylistCur.map(good => {
+                items.push({
+                    productCode: good.productCode,
+                    productName: good.productName,
+                    productNum: good.number,
+                    productPrice: good.price,
+                    properties:[
+                        {
+                            propName: "前端数据",
+                            propValue: "前端数据—01"
+                        }
+                    ]
+                })
+            })
+
+            return { 
+                freight, 
+                remark, 
+                customerId, 
+                merchantId, 
+                addressId: recinfo.id,
+                items, 
+                orderAmount:sumPrice  
+            }
+        },
+		async toPay(){
+
+            const paymentOrder = this.getParams()
+            const response = await API.creatOrder(paymentOrder)
+
+            uni.redirectTo({
+                url:"../pay/payment/payment?amount="+this.sumPrice
+            })
 			
 		},
-		onBackPress() {
-			//页面后退时候，清除订单信息
-			this.clearOrder();
-		},
-		filters: {
-			toFixed:function(x) {
-				return parseFloat(x).toFixed(2);
-			}
-		},
-		methods: {
-			clearOrder(){
-				uni.removeStorage({
-					key: 'buylist',
-					success: (res)=>{
-						this.buylist = [];
-						console.log('remove buylist success');
-					}
-				});
-			},
-			toPay(){
-				//商品列表
-				let paymentOrder = [];
-				let goodsid=[];
-				let len = this.buylist.length;
-				for(let i=0;i<len;i++){
-					paymentOrder.push(this.buylist[i]);
-					goodsid.push(this.buylist[i].id);
-				}
-				if(paymentOrder.length==0){
-					uni.showToast({title:'订单信息有误，请重新购买',icon:'none'});
-					return ;
-				}
-				//本地模拟订单提交UI效果
-				uni.showLoading({
-					title:'正在提交订单...'
-				})
-				setTimeout(()=>{
-					uni.setStorage({
-						key:'paymentOrder',
-						data:paymentOrder,
-						success: () => {
-							uni.hideLoading();
-							uni.redirectTo({
-								url:"../pay/payment/payment?amount="+this.sumPrice
-							})
-						}
-					})
-				},1000)
-				
-			},
-			//选择收货地址
-			selectAddress(){
-				uni.navigateTo({
-					url:'../user/address/address?type=select'
-				})
-			}
+		//选择收货地址
+		selectAddress(){
+			uni.navigateTo({
+				url:'../user/address/address?type=select'
+			})
 		}
 	}
+}
 </script>
 
 <style lang="scss">

@@ -23,27 +23,6 @@
 				</view>
 			</view>
 		</view>
-		<!-- 底部菜单 -->
-		<view class="footer">
-			<view class="icons">
-				<view class="box" @tap="share">
-					<view class="icon fenxiang"></view>
-					<view class="text">分享</view>
-				</view>
-				<view class="box" @tap="toChat">
-					<view class="icon kefu"></view>
-					<view class="text">客服</view>
-				</view>
-				<view class="box" @tap="keep">
-					<view class="icon" :class="[isKeep?'shoucangsel':'shoucang']"></view>
-					<view class="text">{{isKeep?'已':''}}收藏</view>
-				</view>
-			</view>
-			<view class="btn">
-				<view class="joinCart" @tap="joinCart">加入购物车</view>
-				<view class="buy" @tap="buy">立即购买</view>
-			</view>
-		</view>
 		<!-- share弹窗 -->
 		<view class="share" :class="shareClass" @touchmove.stop.prevent="discard" @tap="hideShare">
 			<view class="mask"></view>
@@ -112,7 +91,7 @@
 								<view class="icon jian"></view>
 							</view>
 							<view class="input" @tap.stop="discard">
-								<input type="number" v-model="goodsData.number" />
+								<input type="number" v-model="number" />
 							</view>
 							<view class="add"  @tap.stop="add">
 								<view class="icon jia"></view>
@@ -126,17 +105,17 @@
 		<!-- 商品主图轮播 -->
 		<view class="swiper-box">
 			<swiper circular="true" autoplay="true" @change="swiperChange">
-				<swiper-item v-for="swiper in swiperList" :key="swiper.id">
-					<image :src="swiper.img"></image>
+				<swiper-item v-for="(swiper,index) in swiperList" :key="index">
+					<image :src="swiper.picUrl"></image>
 				</swiper-item>
 			</swiper>
 			<view class="indicator">{{currentSwiper+1}}/{{swiperList.length}}</view>
 		</view>
 		<!-- 标题 价格 -->
 		<view class="info-box goods-info">
-			<view class="price">￥{{goodsData.price}}</view>
+			<view class="price">￥{{ goodsDetail.price | toFixed2 }}</view>
 			<view class="title">
-				{{goodsData.name}}
+				{{goodsDetail.productName || "假装有一个骨架屏"}}
 			</view>
 		</view>
 		<!-- 服务-规则选择 -->
@@ -151,7 +130,7 @@
 				<view class="content">
 					<view>选择规格：</view>
 					<view class="sp">
-						<view v-for="(item,index) in goodsData.spec" :key="index" :class="[index==selectSpec?'on':'']">{{item}}</view>
+						<view v-for="(item,index) in spec" :key="index" :class="[index==selectSpec?'on':'']">{{item}}</view>
 					</view>
 					
 				</view>
@@ -159,7 +138,7 @@
 			</view>
 		</view>
 		<!-- 评价 -->
-		<view class="info-box comments" id="comments">
+		<!-- <view class="info-box comments" id="comments">
 			<view class="row">
 				<view class="text">商品评价({{goodsData.comment.number}})</view>
 				<view class="arrow" @tap="toRatings">
@@ -178,16 +157,40 @@
 					{{goodsData.comment.content}}
 				</view>
 			</view>
-		</view>
+		</view> -->
 		<!-- 详情 -->
 		<view class="description">
 			<view class="title">———— 商品详情 ————</view>
 			<view class="content"><rich-text :nodes="descriptionStr"></rich-text></view>
 		</view>
+		<!-- 底部菜单 -->
+		<view class="footer">
+			<view class="icons">
+				<view class="box" @tap="share">
+					<view class="icon fenxiang"></view>
+					<view class="text">分享</view>
+				</view>
+				<view class="box" @tap="toChat">
+					<view class="icon kefu"></view>
+					<view class="text">客服</view>
+				</view>
+				<view class="box" @tap="keep">
+					<view class="icon" :class="[isKeep?'shoucangsel':'shoucang']"></view>
+					<view class="text">{{isKeep?'已':''}}收藏</view>
+				</view>
+			</view>
+			<view class="btn">
+				<view class="joinCart" @tap="joinCart">加入购物车</view>
+				<view class="buy" @tap="buy">立即购买</view>
+			</view>
+		</view>
 	</view>
 </template>
 
 <script>
+import * as API from '../../request'
+import config from '../../config'
+import constants from '../../constants'
 export default {
 	data() {
 		return {
@@ -202,10 +205,10 @@ export default {
 			// #endif
 			//轮播主图数据
 			swiperList: [
-				{ id: 1, img: 'https://ae01.alicdn.com/kf/HTB1Mj7iTmzqK1RjSZFjq6zlCFXaP.jpg' },
-				{ id: 2, img: 'https://ae01.alicdn.com/kf/HTB1fbseTmzqK1RjSZFLq6An2XXaL.jpg' },
-				{ id: 3, img: 'https://ae01.alicdn.com/kf/HTB1dPUMThnaK1RjSZFtq6zC2VXa0.jpg' },
-				{ id: 4, img: 'https://ae01.alicdn.com/kf/HTB1OHZrTXzqK1RjSZFvq6AB7VXaw.jpg' }
+				// { id: 1, img: 'https://ae01.alicdn.com/kf/HTB1Mj7iTmzqK1RjSZFjq6zlCFXaP.jpg' },
+				// { id: 2, img: 'https://ae01.alicdn.com/kf/HTB1fbseTmzqK1RjSZFLq6An2XXaL.jpg' },
+				// { id: 3, img: 'https://ae01.alicdn.com/kf/HTB1dPUMThnaK1RjSZFtq6zC2VXa0.jpg' },
+				// { id: 4, img: 'https://ae01.alicdn.com/kf/HTB1OHZrTXzqK1RjSZFvq6AB7VXaw.jpg' }
 			],
 			//轮播图下标
 			currentSwiper: 0,
@@ -225,27 +228,49 @@ export default {
 					{name:"极速退款",description:"此商品享受退货极速退款服务"},
 					{name:"7天退换",description:"此商品享受7天无理由退换服务"}
 				],
-				spec:["XS","S","M","L","XL","XXL"],
+				spec: ["前端数据-01","前端数据-02"],
 				comment:{
 					number:102,
 					userface:'../../static/img/face.jpg',
 					username:'大黑哥',
 					content:'很不错，之前买了很多次了，很好看，能放很久，和图片色差不大，值得购买！'
 				}
-			},
-			selectSpec:null,//选中规格
+            },
+            // 商品详情
+            goodsDetail: {},
 			isKeep:false,//收藏
 			//商品描述html
-			descriptionStr:'<div style="text-align:center;"><img width="100%" src="https://ae01.alicdn.com/kf/HTB1t0fUl_Zmx1VjSZFGq6yx2XXa5.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB1LzkjThTpK1RjSZFKq6y2wXXaT.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB18dkiTbvpK1RjSZPiq6zmwXXa8.jpg"/></div>'
+            descriptionStr:'<div style="text-align:center;"><img width="100%" src="https://ae01.alicdn.com/kf/HTB1t0fUl_Zmx1VjSZFGq6yx2XXa5.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB1LzkjThTpK1RjSZFKq6y2wXXaT.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB18dkiTbvpK1RjSZPiq6zmwXXa8.jpg"/></div>',
+            productCode: 0,     // 商品Id
+            number: 1,
+            spec: ["前端数据-01","前端数据-02"],
+            selectSpec: null, //选中规格
 		};
 	},
 	onLoad(option) {
+
 		// #ifdef MP
 		//小程序隐藏返回按钮
 		this.showBack = false;
-		// #endif
+        // #endif
+        
 		//option为object类型，会序列化上个页面传递的参数
-		console.log(option.cid); //打印出上个页面传递的参数。
+        const { productCode } = option
+        if( !productCode ) {
+             uni.showModal({
+                title: `非法进入`,
+                content: "请从入口处进入",
+                showCancel: false
+            })
+            return 
+        }
+
+        this.productCode = productCode
+
+        this.$nextTick(()=>{
+            this.init()
+        })
+
 	},
 	onReady(){
 		this.calcAnchor();//计算锚点高度，页面数据是ajax加载时，请把此行放在数据渲染完成事件中执行以保证高度计算正确
@@ -266,10 +291,28 @@ export default {
 	onReachBottom() {
 		uni.showToast({ title: '触发上拉加载' });
 	},
-	mounted () {
-		
-	},
 	methods: {
+        init(){
+            this.GetProductDetail()
+        },
+        // 获取商品详情
+        async GetProductDetail(){
+            const { productCode } = this.$data
+            const response = await API.GetProductDetail(productCode)
+            const { data } = response
+
+            // 加载轮播图
+            let swiperList =  Array.isArray(data.pics) && data.pics.filter(item => item.picFUn == 1)
+            this.swiperList = swiperList
+            this.goodsDetail = data
+            this.loadCollectFlag(data)
+        },
+        // 判断当前用户是否已经收藏过该商品
+        loadCollectFlag(goods){
+            let collectList = this.$util.GetCollectList()
+			let tempList = collectList.filter(item => item.productCode === goods.productCode)
+			this.isKeep = tempList.length > 0 ? true : false
+        },
 		//轮播图指示器
 		swiperChange(event) {
 			this.currentSwiper = event.detail.current;
@@ -297,18 +340,51 @@ export default {
 			}, 150);
 		},
 		//收藏
-		keep(){
-			this.isKeep = this.isKeep?false:true;
+		async keep(){
+            const { isKeep, goodsDetail } = this.$data
+            // 我的收藏list，先记在本地吧
+
+            if( !isKeep ){
+                try{
+                    await this.$util.addCollectList(goodsDetail)
+                }catch(err){
+                    uni.showToast({ title: '请勿重复添加' })
+                    return
+                }
+                this.isKeep = true
+            }else{
+                this.$util.removeCollectList(goodsDetail)
+                this.isKeep = false
+            }
 		},
 		// 加入购物车
 		joinCart(){
-			if(this.selectSpec==null){
+			if(this.selectSpec == null){
 				return this.showSpec(()=>{
-					uni.showToast({title: "已加入购物车"});
-				});
-			}
-			uni.showToast({title: "已加入购物车"});
-		},
+                    this.cartList()
+				})
+            }
+            this.cartList()
+        },
+        cartList(){
+            const { productCode, number, spec, selectSpec, goodsDetail } = this.$data
+            let goods = { ...goodsDetail, spec: spec[selectSpec], number, selected: false }
+
+            let CARTLIST = uni.getStorageSync(constants.CARTLIST)
+            if( !Array.isArray(CARTLIST) ){
+                CARTLIST = []
+            }
+            // 如果已经加入过了购物车
+            else{
+                const len = CARTLIST.filter(item=>item.productCode === productCode)
+                if(len.length > 0){
+                    return uni.showToast({title: "不要重复添加购物车"})
+                }
+            }
+            CARTLIST.push(goods)
+            uni.setStorageSync(constants.CARTLIST, CARTLIST)
+            uni.showToast({title: "已加入购物车"})
+        },
 		//立即购买
 		buy(){
 			if(this.selectSpec==null){
@@ -324,20 +400,29 @@ export default {
 				url:'ratings/ratings'
 			})
 		},
-		//跳转确认订单页面
+        //跳转确认订单页面
+        // TODO 这里跳转订单页面 还是需要封装成公共的
 		toConfirmation(){
-			let tmpList=[];
-			let goods = {id:this.goodsData.id,img:'../../static/img/goods/p1.jpg',name:this.goodsData.name,spec:'规格:'+this.goodsData.spec[this.selectSpec],price:this.goodsData.price,number:this.goodsData.number};
-			tmpList.push(goods);
-			uni.setStorage({
-				key:'buylist',
-				data:tmpList,
-				success: () => {
-					uni.navigateTo({
-						url:'../order/confirmation'
-					})
-				}
-			})
+            const { productCode, number, spec, selectSpec } = this.$data
+            // 记录商品id
+            let id = productCode
+
+            // 这里感觉怪怪的理论上应该付款的时候 就应该创建一个未付款订单
+            // 这里记一下 选的商品规格与商品件数
+            // 这里记在哪里呢 store里 还是 本地存储呢
+
+            // this.ADD_BUYLIST([1,2,3])
+            // this.$store.dispatch('ADD_BUYLIST',[1,2,3,4])
+
+            let tmpList = []
+            let goods = { id, spec: spec[selectSpec], number }
+            tmpList.push(goods)
+
+            this.$store.dispatch('ADD_BUYLIST', tmpList)
+
+            uni.navigateTo({
+                url:'../order/confirmation'
+            })
 		},
 		//跳转评论列表
 		showComments(goodsid){
@@ -349,14 +434,14 @@ export default {
 		},
 		//减少数量
 		sub(){
-			if(this.goodsData.number<=1){
+			if(this.number<=1){
 				return;
 			}
-			this.goodsData.number--;
+			this.number--;
 		},
 		//增加数量
 		add(){
-			this.goodsData.number++;
+			this.number++;
 		},
 		//跳转锚点
 		toAnchor(index){
@@ -370,18 +455,6 @@ export default {
 				{name:'评价',top:0},
 				{name:'详情',top:0}
 			]
-			let commentsView = uni.createSelectorQuery().select("#comments");
-			commentsView.boundingClientRect((data) => {
-				let statusbarHeight = 0;
-				//APP内还要计算状态栏高度
-				// #ifdef APP-PLUS
-					statusbarHeight = plus.navigator.getStatusbarHeight()
-				// #endif
-				let headerHeight = uni.upx2px(100);
-				this.anchorlist[1].top = data.top - headerHeight - statusbarHeight;
-				this.anchorlist[2].top = data.bottom - headerHeight - statusbarHeight;
-				
-			}).exec();
 		},
 		//返回上一页
 		back() {
@@ -389,7 +462,6 @@ export default {
 		},
 		//服务弹窗
 		showService() {
-			console.log('show');
 			this.serviceClass = 'show';
 		},
 		//关闭服务弹窗
@@ -401,28 +473,22 @@ export default {
 		},
 		//规格弹窗
 		showSpec(fun) {
-			console.log('show');
 			this.specClass = 'show';
 			this.specCallback = fun;
 		},
-		specCallback(){
-			return;
-		},
+		specCallback(){},
 		//关闭规格弹窗
 		hideSpec() {
-			this.specClass = 'hide';
+			this.specClass = 'hide'
 			//回调
-
-			this.selectSpec&&this.specCallback&&this.specCallback();
+			this.selectSpec != null && this.specCallback && this.specCallback()
 			this.specCallback = false;
 			setTimeout(() => {
-				this.specClass = 'none';
+				this.specClass = 'none'
 			}, 200);
 		},
-		discard() {
-			//丢弃
-		}
-	}
+        discard() {},
+    }
 };
 </script>
 
@@ -733,6 +799,7 @@ page {
 	}
 }
 .description {
+    // margin-bottom: 80upx;
 	.title {
 		width: 100%;
 		height: 80upx;

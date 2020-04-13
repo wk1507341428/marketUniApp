@@ -3,9 +3,7 @@
 		<view v-if="showHeader" class="status" :style="{position:headerPosition,top:statusTop}"></view>
 		<view v-if="showHeader" class="header" :style="{position:headerPosition,top:headerTop}">
 			<view class="addr"></view>
-			<view class="input-box">
-				
-			</view>
+			<view class="input-box"></view>
 			<view class="icon-btn">
 				<view class="icon tongzhi" @tap="toMsg"></view>
 				<view class="icon setting" @tap="toSetting"></view>
@@ -14,21 +12,27 @@
 		<!-- 占位 -->
 		<view v-if="showHeader" class="place"></view>
 		<!-- 用户信息 -->
-		<view class="user">
-			<!-- 头像 -->
-			<view class="left">
-				<image :src="user.face" @tap="toSetting"></image>
-			</view>
-			<!-- 昵称,个性签名 -->
-			<view class="right">
-				<view class="username" @tap="toLogin">{{user.username}}</view>
-				<view class="signature" @tap="toSetting">{{user.signature}}</view>
-			</view>
+		<!-- <button open-type="getUserInfo" @getuserinfo="toLogin" class="user"> -->
+        <view class="user">
+            <button open-type="getUserInfo" @getuserinfo="toLogin" class="login-box">
+                <!-- 头像 -->
+                <view class="left">
+                    <image :src="user.face"></image>
+                </view>
+                <!-- <button type="primary" open-type="getUserInfo" @getuserinfo="toLogin">获取用户信息</button> -->
+                <!-- 昵称,个性签名 -->
+                <view class="right">
+                    <view class="username">{{user.username}}</view>
+                    <view class="signature">{{user.signature}}</view>
+                </view>
+             </button>
 			<!-- 二维码按钮 -->
-			<view class="erweima" @tap="toMyQR">
+			<!-- <view class="erweima" @tap="toMyQR">
 				<view class="icon qr"></view>
-			</view>
-		</view>
+			</view> -->
+        </view>
+		<!-- </button> -->
+        <!-- <button open-type="getPhoneNumber" @getphonenumber="getPhoneNumber">获取电话号码</button> -->
 		<!-- VIP banner -->
 		<view class="VIP">
 			<view class="img">
@@ -46,31 +50,6 @@
 						<view class="icon" :class="row.icon"></view>
 					</view>
 					<view class="text">{{row.text}}</view>
-				</view>
-			</view>
-			<!-- 余额 -->
-			<view class="balance-info">
-				<view class="left">
-					<view class="box">
-						<view class="num">{{user.integral}}</view>
-						<view class="text">积分</view>
-					</view>
-					<view class="box">
-						<view class="num">{{user.envelope}}</view>
-						<view class="text">佣金</view>
-					</view>
-					<view class="box">
-						<view class="num">{{user.balance}}</view>
-						<view class="text">余额</view>
-					</view>
-				</view>
-				<view class="right">
-					<view class="box" @tap="toDeposit">
-						<view class="img">
-							<view class="icon chongzhi"></view>
-						</view>
-						<view class="text">充值</view>
-					</view>
 				</view>
 			</view>
 		</view>
@@ -91,7 +70,9 @@
 	</view>
 </template>
 <script>
-
+    import * as API from '../../../request'
+    import constants from '@/constants/index.js'
+    import config from '@/config'
 	export default {
 		data() {
 			return {
@@ -105,11 +86,17 @@
 					username:'游客1002',
 					face:'/static/img/face.jpg',
 					signature:'点击昵称跳转登录/注册页',
-					integral:0,
-					balance:0,
-					envelope:0
 				},
-				// 订单类型
+                // 订单类型
+                // orderStatus
+                // ALL(0,"全部")
+                // CREARED(1,"订单创建成功/未支付")
+                // PAIED_SUCCESS(2,"订单支付成功/待发货")
+                // DEVERLYING(3,"配送中")
+                // PAIED_FAIL(4,"订单支付失败")
+                // RECEIVED(5,"确认收货/完成")
+                // EXPIRED(6,"过期")
+                // CANCLE(7,"取消");
 				orderList:[
 					{text:'待付款',icon:"fukuan"},
 					{text:'待发货',icon:"fahuo"},
@@ -120,17 +107,15 @@
 				// 工具栏列表
 				mytoolbarList:[
 					{url:'../../user/keep/keep',text:'我的收藏',img:'/static/img/user/point.png'},
-					{url:'../../user/coupon/coupon',text:'优惠券',img:'/static/img/user/quan.png'}, 
-					{url:'',text:'新客豪礼',img:'/static/img/user/renw.png'},
-					{url:'',text:'领红包',img:'/static/img/user/momey.png'},
-					
-					{url:'../../user/address/address',text:'收货地址',img:'/static/img/user/addr.png'},
-					{url:'',text:'账户安全',img:'/static/img/user/security.png'},
-					{url:'',text:'银行卡',img:'/static/img/user/bank.png'},
-					{url:'',text:'抽奖',img:'/static/img/user/choujiang.png'},
+                    {url:'../../user/coupon/coupon',text:'优惠券',img:'/static/img/user/quan.png'}, 
+                    {url:'../../user/address/address',text:'收货地址',img:'/static/img/user/addr.png'},
+					// {url:'',text:'新客豪礼',img:'/static/img/user/renw.png'},
+					// {url:'',text:'领红包',img:'/static/img/user/momey.png'},
+					// {url:'',text:'账户安全',img:'/static/img/user/security.png'},
+					// {url:'',text:'银行卡',img:'/static/img/user/bank.png'},
+					// {url:'',text:'抽奖',img:'/static/img/user/choujiang.png'},
 					// {text:'客服',img:'/static/img/user/kefu.png'},
 					// {text:'签到',img:'/static/img/user/mingxi.png'}
-					
 				]
 			}
 		},
@@ -166,15 +151,20 @@
 		},
 		onShow(){
 			uni.getStorage({
-				key: 'UserInfo',
+				key: constants.USERINFOBYWEIXIN,
 				success: (res)=>{
 					if(!res.data){
 						if(this.isfirst){
 							//this.toLogin();
 						}
 						return ;
-					}
-					this.user = res.data;
+                    }
+                    // console.log(res)
+                    res = res.data
+                    this.user = Object.assign({},this.user,{
+                        username: res.nickName,
+                        face: res.avatarUrl
+                    })
 				},
 				fail:(e)=>{
 					//this.toLogin(); 
@@ -203,12 +193,61 @@
 				})
 			},
 			toLogin(){
-				uni.showToast({title: '请登录',icon:"none"});
-				uni.navigateTo({
-					url:'../../login/login'
+                uni.showToast({title: '请登录',icon:"none"})
+                const _this = this
+                uni.login({
+                    success(code){
+                        uni.getUserInfo({
+                            provider: "weixin",
+                            success: async (result) => {
+                                console.log('getUserInfo success', result)
+                                const { avatarUrl, nickName, gender } = result.userInfo
+                                const response = await API.login({
+                                    code: code.code,
+                                    merchantId: config.merchantId,
+                                    avatarUrl,
+                                    nickName,
+                                    gender
+                                })
+                                // 记录本地存储
+								uni.setStorageSync(constants.USERINFOBYWEIXIN,result.userInfo)
+                                uni.setStorageSync(constants.TOKEN,response.data.token)
+                                uni.setStorageSync(constants.CUSTOMERID,response.data.customerId)
+                                // {"token":"t3118389269446848","customerId":"c467059840401372"}
+                                
+                                _this.user = Object.assign({},_this.user,{
+                                    username: nickName,
+                                    face: avatarUrl
+                                })
+                            },
+                            fail: (error) => {
+                                console.log('getUserInfo fail', error)
+                            }
+                        })
+                    }
+                })
+                uni.getUserInfo({
+					provider: "weixin",
+					success: (result) => {
+						console.log('getUserInfo success', result);
+						this.hasUserInfo = true;
+						this.userInfo = result.userInfo;
+					},
+					fail: (error) => {
+						console.log('getUserInfo fail', error)
+					}
 				})
-				this.isfirst = false;
 			},
+			// toLogin(){
+			// 	uni.showToast({title: '请登录',icon:"none"});
+			// 	uni.navigateTo({
+			// 		url:'../../login/login'
+			// 	})
+			// 	this.isfirst = false;
+            // },
+            getPhoneNumber(e) {  
+                console.log(e)
+            }, 
 			isLogin(){
 				//实际应用中,用户登录状态应该用token等方法去维持登录状态.
 				const value = uni.getStorageSync('UserInfo');
@@ -288,12 +327,19 @@
 	.place-bottom{
 		height: 300upx;
 	}
-	.user{
+    button.login-box{
+        // position: static;
+        text-align: left;
+        line-height: normal;
+    }
+    .login-box{
 		width: 92%;
-		padding: 0 4%;
+		padding: 0 4%;     
+        background-color: #f06c7a;   
 		display: flex;
 		align-items: center;
-		// position: relative;
+    }
+	.user{
 		background-color: #f06c7a;
 		padding-bottom: 120upx;
 		.left{
@@ -347,7 +393,7 @@
 		border-radius: 15upx;
 		.list{
 			display: flex;
-			border-bottom: solid 1upx #17e6a1;
+			// border-bottom: solid 1upx #17e6a1;
 			padding-bottom: 10upx;
 			.box{
 				width: 20%;
@@ -366,59 +412,6 @@
 					justify-content: center;
 					font-size: 28upx;
 					color: #3d3d3d;
-				}
-			}
-		}
-		.balance-info{
-			display: flex;
-			padding: 10upx 0;
-			.left{
-				width: 75%;
-				display: flex;
-				.box{
-					width: 50%;
-					font-size: 28upx;
-					
-					.num{
-						width: 100%;
-						height: 50upx;
-						display: flex;
-						justify-content: center;
-						align-items: flex-end;
-						color: #f9a453;
-					}
-					.text{
-						width: 100%;
-						display: flex;
-						justify-content: center;
-						color: #3d3d3d;
-						font-size: 28upx;
-					}
-				}
-			}
-			.right{
-				border-left: solid 1upx #17e6a1;
-				width: 25%;
-				.box{
-					
-					.img{
-						width: 100%;
-						height: 50upx;
-						display: flex;
-						justify-content: center;
-						align-items: flex-end;
-						.icon{
-							font-size: 45upx;
-							color: #e78901;
-						}
-					}
-					.text{
-						width: 100%;
-						display: flex;
-						justify-content: center;
-						font-size: 28upx;
-						color: #3d3d3d;
-					}
 				}
 			}
 		}

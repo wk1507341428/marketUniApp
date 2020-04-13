@@ -1,5 +1,7 @@
-const config_defalut = require("./zm-1v1-config").default
+const config_defalut = require("./config")
 const env = process.env.NODE_ENV
+
+console.log(env,"envenvenv")
 
 let config = {}
 if(['development'].includes(env)){

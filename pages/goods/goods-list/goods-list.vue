@@ -11,12 +11,12 @@
 		<!-- 商品列表 -->
 		<view class="goods-list">
 			<view class="product-list">
-				<view class="product" v-for="(goods) in goodsList" :key="goods.goods_id" @tap="toGoods(goods)">
-					<image mode="widthFix" :src="goods.img"></image>
-					<view class="name">{{goods.name}}</view>
+				<view class="product" v-for="(goods) in productsList" :key="goods.categoryCode" @tap="toGoods(goods)">
+					<image mode="widthFix" src="/static/img/goods/p1.jpg"></image>
+					<view class="name">{{goods.productName}}</view>
 					<view class="info">
-						<view class="price">{{goods.price}}</view>
-						<view class="slogan">{{goods.slogan}}</view>
+						<view class="price">¥{{goods.price}}</view>
+						<view class="slogan">{{goods.stock}}库存</view>
 					</view>
 				</view>
 			</view>
@@ -26,124 +26,120 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				goodsList:[
-					{ goods_id: 0, img: '/static/img/goods/p1.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 1, img: '/static/img/goods/p2.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 2, img: '/static/img/goods/p3.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 3, img: '/static/img/goods/p4.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 4, img: '/static/img/goods/p5.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 5, img: '/static/img/goods/p6.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 6, img: '/static/img/goods/p7.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 7, img: '/static/img/goods/p8.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 8, img: '/static/img/goods/p9.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
-					{ goods_id: 9, img: '/static/img/goods/p10.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' }
-				],
-				loadingText:"正在加载...",
-				headerTop:"0px",
-				headerPosition:"fixed",
-				orderbyList:[
-					{text:"销量",selected:true,orderbyicon:false,orderby:0},
-					{text:"价格",selected:false,orderbyicon:['sheng','jiang'],orderby:0},
-					{text:"好评",selected:false,orderbyicon:false,orderby:0}
-				],
-				orderby:"sheng"
-			};
-		},
-		onLoad: function (option) { //option为object类型，会序列化上个页面传递的参数
-			console.log(option.cid); //打印出上个页面传递的参数。
-			uni.setNavigationBarTitle({
-				title: option.name
-			});
-			
-			//兼容H5下排序栏位置
-			// #ifdef H5
-				//定时器方式循环获取高度为止，这么写的原因是onLoad中head未必已经渲染出来。
-				let Timer = setInterval(()=>{
-					let uniHead = document.getElementsByTagName('uni-page-head');
-					if(uniHead.length>0){
-						this.headerTop = uniHead[0].offsetHeight+'px';
-						clearInterval(Timer);//清除定时器
-					}
-				},1);
-			// #endif
-		},
-		onPageScroll(e){
-			//兼容iOS端下拉时顶部漂移
-			if(e.scrollTop>=0){
-				this.headerPosition = "fixed";
-			}else{
-				this.headerPosition = "absolute";
-			}
-		},
-		//下拉刷新，需要自己在page.json文件中配置开启页面下拉刷新 "enablePullDownRefresh": true
-		onPullDownRefresh() {
-		    setTimeout(()=>{
-				this.reload();
-		        uni.stopPullDownRefresh();
-		    }, 1000);
-		},
-		//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
-		onReachBottom(){
-			uni.showToast({title: '触发上拉加载'});
-			let len = this.goodsList.length;
-			if(len>=40){
-				this.loadingText="到底了";
-				return false;
-			}else{
-				this.loadingText="正在加载...";
-			}
-			let end_goods_id = this.goodsList[len-1].goods_id;
-			for(let i=1;i<=10;i++){
-				let goods_id = end_goods_id+i;
-				let p = { goods_id: goods_id, img: '/static/img/goods/p'+(goods_id%10==0?10:goods_id%10)+'.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' };
-				this.goodsList.push(p);
-			}
-		},
-		methods:{
-			reload(){
-				console.log("reload");
-				let tmpArr = []
-				this.goodsList = [];
-				let end_goods_id = 0;
-				for(let i=1;i<=10;i++){
-					let goods_id = end_goods_id+i;
-					let p = { goods_id: goods_id, img: '/static/img/goods/p'+(goods_id%10==0?10:goods_id%10)+'.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' };
-					this.goodsList.push(p);
-				}
-			},
-			//商品跳转
-			toGoods(e){
-				uni.showToast({title: '商品'+e.goods_id,icon:"none"});
-				uni.navigateTo({
-					url: '../goods' 
-				});
-			},
-			//排序类型
-			select(index){
-				let tmpTis = this.orderbyList[index].text+"排序 "
-				if(this.orderbyList[index].orderbyicon){
-					let type = this.orderbyList[index].orderby==0?'升序':'降序';
-					if(this.orderbyList[index].selected){
-						type = this.orderbyList[index].orderby==0?'降序':'升序';
-						this.orderbyList[index].orderby = this.orderbyList[index].orderby==0?1:0;
-					}
-					tmpTis+=type
-				}
-				this.orderbyList[index].selected = true;
-				let len = this.orderbyList.length;
-				for(let i=0;i<len;i++){
-					if(i!=index){
-						this.orderbyList[i].selected = false;
-					}
-				}
-				uni.showToast({title:tmpTis,icon:"none"});
-			}
+import * as API from '../../../request'
+export default {
+	data() {
+		return {
+			goodsList:[
+				{ goods_id: 0, img: '/static/img/goods/p1.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 1, img: '/static/img/goods/p2.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 2, img: '/static/img/goods/p3.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 3, img: '/static/img/goods/p4.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 4, img: '/static/img/goods/p5.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 5, img: '/static/img/goods/p6.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 6, img: '/static/img/goods/p7.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 7, img: '/static/img/goods/p8.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 8, img: '/static/img/goods/p9.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' },
+				{ goods_id: 9, img: '/static/img/goods/p10.jpg', name: '商品名称商品名称商品名称商品名称商品名称', price: '￥168', slogan:'1235人付款' }
+			],
+			headerTop:"0px",
+			headerPosition:"fixed",
+			orderbyList:[
+				{text:"销量",selected:true,orderbyicon:false,orderby:0},
+				{text:"价格",selected:false,orderbyicon:['sheng','jiang'],orderby:0},
+				{text:"好评",selected:false,orderbyicon:false,orderby:0}
+			],
+            orderby:"sheng",
+            categoryCode: "",   // 类型code 要根据这个查询商品列表
+            merchantId: "",     // 商家id 不然你知道查什么？
+            productsList: [],   // 商品列表
+            total: 0,           // 商品总数 因为要分页呀
+            loadingText:"查看更多",
+		};
+	},
+	onLoad: function (option) { //option为object类型，会序列化上个页面传递的参数
+        const { categoryName, categoryCode, merchantId } = option
+		uni.setNavigationBarTitle({
+			title: categoryName
+        })
+        
+        this.$nextTick(()=>{
+            this.categoryCode = categoryCode
+            this.merchantId = merchantId
+            this.init()
+        })
+	},
+	onPageScroll(e){
+		//兼容iOS端下拉时顶部漂移
+		if(e.scrollTop>=0){
+			this.headerPosition = "fixed";
+		}else{
+			this.headerPosition = "absolute";
 		}
-		
+	},
+	//下拉刷新，需要自己在page.json文件中配置开启页面下拉刷新 "enablePullDownRefresh": true
+	onPullDownRefresh() {
+        uni.showToast({title: '触发下拉加载'})
+	},
+	//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
+	onReachBottom(){
+		uni.showToast({title: '触发上拉加载'})
+	},
+	methods:{
+		//商品跳转
+		toGoods(item){
+			uni.showToast({title: '商品'+item.productCode,icon:"none"});
+			uni.navigateTo({
+				url: `../goods?productCode=${item.productCode}`
+			});
+		},
+		//排序类型
+		select(index){
+			let tmpTis = this.orderbyList[index].text+"排序 "
+			if(this.orderbyList[index].orderbyicon){
+				let type = this.orderbyList[index].orderby==0?'升序':'降序';
+				if(this.orderbyList[index].selected){
+					type = this.orderbyList[index].orderby==0?'降序':'升序';
+					this.orderbyList[index].orderby = this.orderbyList[index].orderby==0?1:0;
+				}
+				tmpTis+=type
+			}
+			this.orderbyList[index].selected = true;
+			let len = this.orderbyList.length;
+			for(let i=0;i<len;i++){
+				if(i!=index){
+					this.orderbyList[i].selected = false;
+				}
+			}
+			uni.showToast({title:tmpTis,icon:"none"});
+        },
+        init(){
+            this.getDoodsListByCate()
+        },
+        // 获取商品列表
+        async getDoodsListByCate(info={}){
+            let { categoryCode, merchantId, productsList } = this.$data
+            let params = {
+                needTotalCount: true,
+                offset: 0,
+                pageNum: 1,
+                pageSize: 20,
+                merchantId,
+                categoryCode
+            }
+            const response = await API.GetProductsByCate(Object.assign(params,info))
+            const { data, total } = response
+
+            for ( let i=0; i<10; i++ ){
+                productsList = productsList.concat(data)
+            }
+
+            this.productsList = productsList
+            this.total = total
+        }
 	}
+	
+}
 </script>
 
 <style lang="scss">
@@ -215,7 +211,7 @@
 				}
 				.name{
 					width: 92%;
-					padding: 10upx 4%;
+					padding: 10upx 4% 0;
 					display: -webkit-box;
 					-webkit-box-orient: vertical;
 					-webkit-line-clamp: 2;

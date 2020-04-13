@@ -2,28 +2,24 @@
 	<view>
 		<view class="content">
 			<view class="list">
-				<view class="row" v-for="(row,index) in addressList" :key="index" @tap="select(row)">
+				<view class="row" v-for="(row,index) in addressList1" :key="index" @tap="select(row)">
 					<view class="left">
-						<view class="head">
-							{{row.head}}
-						</view>
+						<view class="head">品</view>
 					</view>
 					<view class="center">
 						<view class="name-tel">
-							<view class="name">{{row.name}}</view>
-							<view class="tel">{{row.tel}}</view>
+							<view class="name">{{row.recevierName}}</view>
+							<view class="tel">{{row.receviePhone}}</view>
 							<view class="default" v-if="row.isDefault">
 								默认
 							</view>
 						</view>
 						<view class="address">
-							{{row.address.region.label}} {{row.address.detailed}}
+							{{row.provinceName}} {{row.addressDetail}}
 						</view>
 					</view>
 					<view class="right">
-						<view class="icon bianji" @tap.stop="edit(row)">
-							
-						</view>
+						<view class="icon bianji" @tap.stop="edit(row)"></view>
 					</view>
 				</view>
 			</view>
@@ -36,98 +32,71 @@
 	</view>
 </template>
 <script>
-	export default {
-		data() {
-			return {
-				isSelect:false,
-				addressList:[
-					{id:1,name:"大黑哥",head:"大",tel:"18816881688",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:true},
-					{id:2,name:"大黑哥",head:"大",tel:"15812341234",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深北小道2222号有名公寓502'},isDefault:false},
-					{id:3,name:"老大哥",head:"老",tel:"18155467897",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:false},
-					{id:4,name:"王小妹",head:"王",tel:"13425654895",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:false},
-				]
-			};
-		},
-		onShow() {
+import * as API from '../../../request/index'
+import { mapState } from 'vuex'
+export default {
+	data() {
+		return {
+			isSelect:false,
+			addressList:[
+				{id:1,name:"大黑哥",head:"大",tel:"18816881688",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:true},
+				{id:2,name:"大黑哥",head:"大",tel:"15812341234",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深北小道2222号有名公寓502'},isDefault:false},
+				{id:3,name:"老大哥",head:"老",tel:"18155467897",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:false},
+				{id:4,name:"王小妹",head:"王",tel:"13425654895",address:{region:{"label":"广东省-深圳市-福田区","value":[18,2,1],"cityCode":"440304"},detailed:'深南大道1111号无名摩登大厦6楼A2'},isDefault:false},
+            ],
+            addressList1:[]
+		};
+	},
+	onShow() {
+        this.$nextTick(()=>{
+            this.init()
+        })
+    },
+	onLoad(e) {
+		if(e.type=='select'){
+			this.isSelect = true
+		}
+    },
+    computed:{
+        ...mapState(["BUYLIST","ADD_SELECT_ADDRESS"]),
+    },
+	methods:{
+        init(){
+            this.getAddressList()
+        },
+        async getAddressList(){
+            let response = await API.getAddressList()
+            const { data } = response
+            console.log("我被执行了我被执行了我被执行了我被执行了我被执行了我被执行了")
+            this.addressList1 = Array.isArray(data) && data
+        },
+		edit(row){
+			uni.setStorage({
+				key: 'address',
+				data: row,
+				success() {
+					uni.navigateTo({
+						url:"edit/edit?type=edit"
+					})
+				}
+			});
 			
-			uni.getStorage({
-				key:'delAddress',
-				success: (e) => {
-					let len = this.addressList.length;
-					if(e.data.hasOwnProperty('id')){
-						for(let i=0;i<len;i++){
-							if(this.addressList[i].id==e.data.id){
-								this.addressList.splice(i,1);
-								break;
-							}
-						}
-					}
-					uni.removeStorage({
-						key:'delAddress'
-					})
-				}
-			})
-			uni.getStorage({
-				key:'saveAddress',
-				success: (e) => {
-					let len = this.addressList.length;
-					if(e.data.hasOwnProperty('id')){
-						for(let i=0;i<len;i++){
-							if(this.addressList[i].id==e.data.id){
-								this.addressList.splice(i,1,e.data);
-								break;
-							}
-						}
-					}else{
-						let lastid = this.addressList[len-1];
-						lastid++;
-						e.data.id = lastid;
-						this.addressList.push(e.data);
-					}
-					uni.removeStorage({
-						key:'saveAddress'
-					})
-				}
+		},
+		add(){
+			uni.navigateTo({
+				url:"edit/edit?type=add"
 			})
 		},
-		onLoad(e) {
-			if(e.type=='select'){
-				this.isSelect = true;
-			}
-		},
-		methods:{
-			edit(row){
-				uni.setStorage({
-					key:'address',
-					data:row,
-					success() {
-						uni.navigateTo({
-							url:"edit/edit?type=edit"
-						})
-					}
-				});
-				
-			},
-			add(){
-				uni.navigateTo({
-					url:"edit/edit?type=add"
-				})
-			},
-			select(row){
-				//是否需要返回地址(从订单确认页跳过来选收货地址)
-				if(!this.isSelect){
-					return ;
-				}
-				uni.setStorage({
-					key:'selectAddress',
-					data:row,
-					success() {
-						uni.navigateBack();
-					}
-				})
-			}
+		select(row){
+			//是否需要返回地址(从订单确认页跳过来选收货地址)
+			if(!this.isSelect){
+				return
+            }
+            this.$store.dispatch('ADD_SELECT_ADDRESS',row)
+            uni.navigateBack()
 		}
 	}
+}
 </script>
 
 <style lang="scss">

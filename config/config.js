@@ -1,6 +1,6 @@
 const config = {
-    zmWebNode01Host: 'https://zminet.com/api/web-node',     // 新的node项目域名
-    shareAppId: 'wxae9b35b06db1a6f8',   // 掌门陪练在线1对1
-    AppH5Host: 'https://app-h5.zhangmen.com',
+    customerId: "c123123123",   // 用户编码
+    host: "http://112.124.97.180:8088",
+    merchantId: "c123123123",  // 商家编码
 };
-export default config;
+export default config

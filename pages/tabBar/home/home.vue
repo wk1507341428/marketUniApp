@@ -4,11 +4,6 @@
 		<view v-if="showHeader" class="status" :style="{ position: headerPosition,top:statusTop,opacity: afterHeaderOpacity}"></view>
 		<!-- 顶部导航栏 -->
 		<view v-if="showHeader" class="header" :style="{ position: headerPosition,top:headerTop,opacity: afterHeaderOpacity }">
-			<!-- 定位城市 -->
-			<view class="addr">
-				<view class="icon location"></view>
-				{{ city }}
-			</view>
 			<!-- 搜索框 -->
 			<view class="input-box">
 				<input
@@ -31,7 +26,7 @@
 			<view class="swiper-box">
 				<swiper circular="true" autoplay="true" @change="swiperChange">
 					<swiper-item v-for="swiper in swiperList" :key="swiper.id">
-						<image :src="swiper.img" @tap="toSwiper(swiper)"></image>
+						<image :src="swiper.bannerPic" @tap="toSwiper(swiper)"></image>
 					</swiper-item>
 				</swiper>
 				<view class="indicator">
@@ -50,7 +45,7 @@
 				class="category"
 				v-for="(row, index) in categoryList"
 				:key="index"
-				@tap="toCategory(row)"
+				@tap="tips(row)"
 			>
 				<view class="img"><image :src="row.img"></image></view>
 				<view class="text">{{ row.name }}</view>
@@ -59,7 +54,7 @@
 		<!-- 广告图 -->
 		<view class="banner"><image src="/static/img/banner.jpg"></image></view>
 		<!-- 活动区 -->
-		<view class="promotion">
+		<!-- <view class="promotion">
 			<view class="text">优惠专区</view>
 			<view class="list">
 				<view
@@ -85,38 +80,37 @@
 					<view class="right"><image :src="row.img"></image></view>
 				</view>
 			</view>
-		</view>
-		<!-- 商品列表 -->
-		<view class="goods-list">
-			<view class="title">
+		</view> -->
+        <!-- 电梯层 -->
+        <view v-for="(info,index) in elevatorList" :key="index" class="goods-list">
+            <view class="title">
 				<image src="/static/img/hua.png"></image>
-				猜你喜欢
+				{{ info.categoryName }}
 				<image src="/static/img/hua.png"></image>
 			</view>
-			<view class="product-list">
-				<view
+            <view class="product-list">
+                <view
 					class="product"
-					v-for="product in productList"
-					:key="product.goods_id"
-					@tap="toGoods(product)"
+					v-for="(product,i) in info.children"
+					:key="i"
+                    @click="toGoods(product)"
 				>
-					<image mode="widthFix" :src="product.img"></image>
-					<view class="name">{{ product.name }}</view>
+					<image mode="widthFix" :src="product.pic || '/static/img/goods/p3.jpg'"></image>
+					<view class="name">{{ product.productName }}</view>
 					<view class="info">
-						<view class="price">{{ product.price }}</view>
-						<view class="slogan">{{ product.slogan }}</view>
+						<view class="price">￥{{ product.price }}</view>
+						<view class="slogan">{{ product.stock }}库存</view>
 					</view>
 				</view>
-			</view>
-			<view class="loading-text">{{ loadingText }}</view>
-		</view>
+            </view>
+            <view @tap="toMore(info)" class="loading-text">查看更多</view>
+        </view>
 	</view>
 </template>
 
 <script>
-var ttt = 0;
-//高德SDK
-import amap from '@/common/SDK/amap-wx.js';
+import config from '@/config'
+import * as API from '@/request'
 export default {
 	data() {
 		return {
@@ -129,11 +123,7 @@ export default {
 			city: '北京',
 			currentSwiper: 0,
 			// 轮播图片
-			swiperList: [
-				{ id: 1, src: 'url1', img: '/static/img/1.jpg' },
-				{ id: 2, src: 'url2', img: '/static/img/2.jpg' },
-				{ id: 3, src: 'url3', img: '/static/img/3.jpg' }
-			],
+			swiperList: [],
 			// 分类菜单
 			categoryList: [
 				{ id: 1, name: '办公', img: '/static/img/category/1.png' },
@@ -219,8 +209,10 @@ export default {
 					slogan: '1235人付款'
 				}
 			],
-			loadingText: '正在加载...'
-		};
+            loadingText: '正在加载...',
+            // 电梯层数据
+            elevatorList: []
+		}
 	},
 	onPageScroll(e) {
 		//兼容iOS端下拉时顶部漂移
@@ -259,11 +251,46 @@ export default {
 	},
 	onLoad() {
 		//开启定时器
-		this.Timer();
+		this.Timer()
 		//加载活动专区
-		this.loadPromotion();
+        this.loadPromotion()
+        
+        this.$nextTick(()=>{
+            this.init()
+        })
 	},
 	methods: {
+        init(){
+            this.getCategoryList()
+            this.getBannerList()
+        },
+        // 获取banner
+        async getBannerList(){
+            let response = await API.GetBannerList(config.merchantId)
+            this.swiperList = response.data
+        },
+        // 查询商家的类目列表
+        async getCategoryList(){
+            const response = await API.GetCateList()
+            let { data, total } = response
+            // 这里感觉有一点不对劲，我需要遍历分类数组去查询它的产品？
+            Array.isArray(data) && data.map(async item => {
+                const { categoryCode, merchantId, categoryName } = item
+                let params = {
+                    categoryCode,
+                    merchantId,
+                    needTotalCount: true,
+                    offset: 0,
+                    pageNum: 1,
+                    pageSize: 10
+                }
+                const result = await API.GetProductsByCate(params)
+                // 将数据整合下  但是觉得怪怪的
+                item.children = result.data
+            })
+            this.elevatorList = data
+
+        },
 		//加载Promotion 并设定倒计时,,实际应用中应该是ajax加载此数据。
 		loadPromotion() {
 			let cutTime = new Date();
@@ -366,7 +393,10 @@ export default {
 		//轮播图跳转
 		toSwiper(e) {
 			uni.showToast({ title: e.src, icon: 'none' });
-		},
+        },
+        tips(){
+            uni.showToast({ title:"你点击了 分类列表 但是这个分类列表是假的", icon: 'none' })
+        },
 		//分类跳转
 		toCategory(e) {
 			//uni.showToast({title: e.name,icon:"none"});
@@ -380,16 +410,23 @@ export default {
 			uni.showToast({ title: e.title, icon: 'none' });
 		},
 		//商品跳转
-		toGoods(e) {
-			uni.showToast({ title: '商品' + e.goods_id, icon: 'none' });
+		toGoods(item) {
+			uni.showToast({title: '商品'+item.productCode,icon:"none"});
 			uni.navigateTo({
-				url: '../../goods/goods'
-			});
+				url: `../../goods/goods?productCode=${item.productCode}`
+			})
 		},
 		//轮播图指示器
 		swiperChange(event) {
 			this.currentSwiper = event.detail.current;
-		}
+        },
+        // 电梯层查看更多
+        toMore(item){
+            const { categoryCode, merchantId, categoryName } = item
+            uni.navigateTo({
+				url: `../../goods/goods-list/goods-list?merchantId=${merchantId}&categoryName=${categoryName}&categoryCode=${categoryCode}`
+			})
+        }
 	}
 };
 </script>
@@ -442,23 +479,6 @@ page{position: relative;background-color: #fff;}
 	/*  #ifdef  APP-PLUS  */
 	top: var(--status-bar-height);
 	/*  #endif  */
-
-	.addr {
-		width: 120upx;
-		height: 60upx;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		font-size: 28upx;
-		.icon {
-			height: 60upx;
-			margin-right: 5upx;
-			display: flex;
-			align-items: center;
-			font-size: 42upx;
-			color: #ffc50a;
-		}
-	}
 	.input-box {
 		width: 100%;
 		height: 60upx;
@@ -720,7 +740,7 @@ page{position: relative;background-color: #fff;}
 			}
 			.name {
 				width: 92%;
-				padding: 10upx 4%;
+				padding: 10upx 4% 0;
 				display: -webkit-box;
 				-webkit-box-orient: vertical;
 				-webkit-line-clamp: 2;

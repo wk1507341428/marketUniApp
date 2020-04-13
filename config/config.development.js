@@ -1,7 +1,7 @@
 
 const config = {
-    zmWebNode01Host: 'https://net001.zmaxis.com/api/web-node',
-    shareAppId: 'wxa209d69c766d5066',
-    AppH5Host: 'http://app-h5-test.zhangmen.com',
+    customerId: "c123123123",   // 用户编码
+    host: "http://112.124.97.180:8088",
+    merchantId: "c123123123",  // 商家编码
 };
 export default config;
