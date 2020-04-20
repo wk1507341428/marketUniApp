@@ -22,7 +22,7 @@
 		<!-- 占位 -->
 		<view v-if="showHeader" class="place"></view>
 		<!-- 轮播图 -->
-		<view class="swiper">
+		<view @click="pay" class="swiper">
 			<view class="swiper-box">
 				<swiper circular="true" autoplay="true" @change="swiperChange">
 					<swiper-item v-for="swiper in swiperList" :key="swiper.id">
@@ -260,6 +260,23 @@ export default {
         })
 	},
 	methods: {
+		// 测试支付
+		async pay(){
+			console.log("测试支付")
+			let response = await API.pay("O3090300890354416199")
+			console.log(JSON.parse(response.data))
+			response = JSON.parse(response.data)
+			uni.requestPayment({
+				timeStamp: response.timeStamp,
+				nonceStr:response.nonceStr,
+				package: response.package,
+				paySign:response.sign,
+				signType:response.signType,
+				complete(data){
+					console.log(222,data)
+				}
+			})
+		},
         init(){
             this.getCategoryList()
             this.getBannerList()

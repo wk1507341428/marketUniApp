@@ -94,8 +94,8 @@ class Call {
 
         return new Promise((resolve, reject) => {
 
-            const token =  uni.getStorageSync("TOKEN")
-            const request = {
+            let token =  uni.getStorageSync("TOKEN")
+            let request = {
                 url,
                 method: this.method,
                 data: this.body,
@@ -132,8 +132,9 @@ class Call {
                 if ( success ) {
                     resolve(response)
                 } else {
+                    // TODO
                     if(response.errCode == 401){
-                        return new Promise((res, rej) => { 
+                        return new Promise(() => { 
                             uni.login({
                                 provider: "weixin",
                                 success: async (result) => {
@@ -144,7 +145,52 @@ class Call {
                 
                                     uni.setStorageSync(constants.TOKEN,response.data.token)
                                     uni.setStorageSync(constants.CUSTOMERID,response.data.customerId)
-                                    return this.exec()
+
+                                    token =  uni.getStorageSync("TOKEN")
+                                    request = {
+                                        url,
+                                        method: this.method,
+                                        data: this.body,
+                                        params: this.params,
+                                        header: Object.assign(this.headers,{token}),
+                                    }
+                        
+                                    if (this.useLoading) {
+                                        this.defaultLoading.show()
+                                    }
+
+                                    uni.request(request).then(data => {
+
+                                        if (this.useLoading) {
+                                            this.defaultLoading.hide()
+                                        }
+                        
+                                        var [error, response]  = data
+                        
+                                        if(error){
+                                            this.catchHelper(error,reject)
+                                            return
+                                        }
+                        
+                                        if(response.statusCode === 200){
+                                            response = response.data
+                                        }else{
+                                            this.catchHelper(response.data,reject)
+                                            return
+                                        }
+                                    
+                        
+                                        const { success } = response
+                                        if ( success ) {
+                                            resolve(response)
+                                        }else{
+                                            if (!this.server_error && typeof this.onServerError === 'function') {
+                                                this.onServerError(response)
+                                            } else {
+                                                resolve(response)
+                                            }
+                                        }
+                                    })
                                 }
                             })
                         })

@@ -41,7 +41,9 @@ const http = new httpServer({
 // 获取收货地址
 export function getAddressList(){
     // TODO
-    return http.get(`/mall/address/v1/addresses/c123123123`).withLoading().exec()
+    const a = http.get(`/mall/address/v1/addresses/c123123123`).withLoading().exec()
+    console.log(a,"<<<<<aaa")
+    return a
 }
 
 /**
@@ -160,4 +162,8 @@ export function GetOrderList(data){
  */
 export function GetBannerList(data){
     return http.get(`/mall/banners/v1/${data}`).withLoading().exec()
+}
+
+export function pay(data){
+	return http.post(`/mall/pay/v1/order`,data).withLoading().exec()
 }
