@@ -102,6 +102,8 @@ class Call {
                 params: this.params,
                 header: Object.assign(this.headers,{token}),
             }
+			
+			console.log(request,"requestrequest")
 
             if (this.useLoading) {
                 this.defaultLoading.show()
@@ -228,7 +230,7 @@ class HttpServe {
 
     get (path, params = {}) {
         this.params = params
-        this.body = {}
+        this.body = params
         return new Call(this, GET, path)
     }
 

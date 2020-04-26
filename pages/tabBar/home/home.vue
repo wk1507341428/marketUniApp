@@ -14,6 +14,7 @@
 				<view class="icon search"></view>
 			</view>
 			<!-- 右侧图标按钮 -->
+			
 			<view class="icon-btn">
 				<view class="icon yuyin-home"></view>
 				<view class="icon tongzhi" @tap="toMsg"></view>

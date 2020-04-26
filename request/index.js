@@ -89,7 +89,7 @@ export function GetCateList(data="c123123123"){
  * @return: 
  */
 export function GetProductsByCate(data){
-    return http.post(`/mall/product/v1/products/category`,data).withLoading().exec()
+    return http.get(`/mall/product/v1/products/pagenation`, data).withLoading().exec()
 }
 
 /**
