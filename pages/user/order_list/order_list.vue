@@ -25,7 +25,10 @@
 							<view class="name">
 								{{row.items.productName}}
 							</view>
-							<view v-for="(spec,i) in row.items.properties" :key="i" class="spec">{{spec.propName}}  {{spec.propValue}}</view>
+                            <view class="spec-box">
+                                <view v-for="spec in row.items.properties" :key="spec.id" class="spec">{{`${spec.specName}:${spec.properties[0].propertyName}`}}</view>
+                                <view class="spec">数量：{{ row.items.productNum }}</view>
+                            </view>
 							<view class="price-number">
 								￥<view class="price">{{row.items.productPrice | toFixed2}}</view>
 								x<view class="number">{{row.items.productNum}}</view>
@@ -34,16 +37,16 @@
 						
 					</view>
 					<view class="detail">
-						<view class="number">共{{row.items.productNum}}件商品</view><view class="sum">合计￥<view class="price">{{row.orderAmount | toFixed2}}</view></view><view class="nominal">(含运费 ￥{{row.deliveryFee | toFixed2}})</view>
+						<view class="number">共{{row.items.productNum}}件商品</view><view class="sum">合计￥<view class="price">{{row.orderAmount | toFixed2}}</view></view>
 					</view>
 					<view class="btns">
-						<block v-if="row.orderStatus=='0'"><view class="default" @tap="cancelOrder(row)">取消订单</view><view class="pay" @tap="toPayment(row)">付款</view></block>
+						<block v-if="row.orderStatus=='1'"><view class="default" @tap="cancelOrder(row)">取消订单</view><view class="pay" @tap="toPayment(row)">付款</view></block>
 						<block v-if="row.type=='back'"><view class="default" @tap="remindDeliver(row)">提醒发货</view></block>
 						<block v-if="row.type=='unreceived'"><view class="default" @tap="showLogistics(row)">查看物流</view><view class="pay">确认收货</view><view class="pay">我要退货</view></block>
-						<block v-if="row.type=='received'"><view class="default">评价</view><view class="default">再次购买</view></block>
+						<block  v-if="row.orderStatus=='5'"><view @click="handleComment(row)" class="default">评价</view><view class="default">再次购买</view></block>
 						<block v-if="row.type=='completed'"><view class="default">再次购买</view></block>
 						<block v-if="row.type=='refunds'"><view class="default">查看进度</view></block>
-						<block v-if="row.type=='cancelled'"><view class="default">已取消</view></block>
+						<block v-if="row.orderStatus=='6'"><view class="default">已过期</view></block>
 					</view>
 				</view>
 			</view>
@@ -68,7 +71,7 @@ export default {
 				refunds:'商品退货处理中',
 				cancelled:'订单已取消'
 			},
-			orderType: ['全部','待付款','待发货','待收货','待评价','退换货'],
+			orderType: ['全部','待付款','待发货','待收货','退换货','待评价'],
 			//订单列表 演示数据
 			orderList:[],
 			list:[],
@@ -115,7 +118,7 @@ export default {
                 orderStatus,
                 pageNum,
                 pageSize: 5,
-                customerId: "c123123123"
+                customerId: uni.getStorageSync(this.$constants.CUSTOMERID)
             })
             const list = response.data
             Array.isArray(list) && list.map(order=>{
@@ -136,7 +139,7 @@ export default {
             // CANCLE(7,"取消");
         },
 		showType(tbIndex){
-            this.tabbarIndex = tbIndex;
+            this.tabbarIndex = tbIndex
             this.orderStatus = tbIndex
             this.GetOrderList((list)=>{
                 this.list = list
@@ -206,7 +209,13 @@ export default {
 					}
 				})
 			},500)
-		}
+		},
+        handleComment({ items }){
+			const { productCode, productPic } = items
+			uni.navigateTo({
+				url:`./comment?productCode=${productCode}&productPic=${productPic}`
+			})
+        }
 	}
 }
 </script>

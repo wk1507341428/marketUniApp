@@ -151,8 +151,7 @@ export default {
                     provinceName: label,
                     receviePhone: tel,
                     recevierName: name,
-                    // TODO
-                    customerId: "c123123123"
+                    customerId: uni.getStorageSync(this.$constants.CUSTOMERID)
                 })
 
                 uni.showToast({title:'添加成功'})
@@ -169,7 +168,7 @@ export default {
                     provinceName: label,
                     receviePhone: tel,
                     recevierName: name,
-                    customerId: "c123123123",
+                    customerId: uni.getStorageSync(this.$constants.CUSTOMERID),
                     id
                 })
                 uni.showToast({title:'编辑成功'})

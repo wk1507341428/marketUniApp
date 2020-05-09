@@ -1,5 +1,6 @@
 import httpServer from './httpServer'
 import config from '../config'
+import constants from '../constants'
 
 const http = new httpServer({
     baseUrl: `${config.host}`,
@@ -40,10 +41,7 @@ const http = new httpServer({
 
 // 获取收货地址
 export function getAddressList(){
-    // TODO
-    const a = http.get(`/mall/address/v1/addresses/c123123123`).withLoading().exec()
-    console.log(a,"<<<<<aaa")
-    return a
+    return http.get(`/mall/address/v1/addresses/${uni.getStorageSync(constants.CUSTOMERID)}`).withLoading().exec()
 }
 
 /**
@@ -166,4 +164,40 @@ export function GetBannerList(data){
 
 export function pay(data){
 	return http.post(`/mall/pay/v1/order`,data).withLoading().exec()
+}
+
+export default {
+    getAddressList,
+    addAddress,
+    editAddress,
+    delAddress,
+    GetCateList,
+    GetProductsByCate,
+    GetProductDetail,
+    addFavoriate,
+    getFavoriateList,
+    removeFavoriate,
+    creatOrder,
+    login,
+    GetOrderList,
+    GetBannerList,
+    pay,
+    /**
+     * @description: 获取评论列表
+     * @param {type} 
+     * @return: 
+     */
+    GetCommentList(productId){
+        return http.get(`/mall/product/v1/comments/${productId}`).withLoading().exec()
+    },
+    UploadFileUrl: `${config.host}/mall/file/v1/`,
+
+    /**
+     * @description: 增加评论
+     * @param {type} 
+     * @return: 
+     */    
+    AddComment(data){
+        return http.post(`/mall/product/v1/comment/add`, data).withLoading().exec()
+    }
 }

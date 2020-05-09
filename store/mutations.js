@@ -25,4 +25,13 @@ export default {
     [ActionTypes.ADD_PROMISEQUEUE]( state, val ){
         state.PROMISEQUEUE.push(val)
     },
+
+    /**
+     * @description: 同步用户信息
+     * @param {type} 
+     * @return: 
+     */    
+    [ActionTypes.ADD_USERINFO]( state, val ){
+        state.USER = val
+    }
 }

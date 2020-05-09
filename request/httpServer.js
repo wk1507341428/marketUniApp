@@ -99,11 +99,11 @@ class Call {
                 url,
                 method: this.method,
                 data: this.body,
-                params: this.params,
-                header: Object.assign(this.headers,{token}),
+                // params: this.params,
+                header: Object.assign(this.headers,{ token }),
             }
 			
-			console.log(request,"requestrequest")
+			// console.log(request,"requestrequest")
 
             if (this.useLoading) {
                 this.defaultLoading.show()

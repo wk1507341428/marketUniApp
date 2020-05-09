@@ -6,12 +6,41 @@
 		<view class="content">
 			
 			<view class="label">
-				<view v-for="(label,index) in labelList" :class="{'on':index==labelIndex}" @tap="loadRatings(index)" :key="label.type">
+				<view v-for="(label,index) in labelList" :class="{'on':index==labelIndex}" @tap="loadRatings(label,index)" :key="label.type">
 					{{label.name}}({{label.number}})
 				</view>
 			</view>
 			<view class="list">
-				<view class="row" v-for="(row,Rindex) in ratingsList" :key="Rindex">
+                <!-- 用户评论 -->
+                <view class="row" v-for="(row,Rindex) in CommentList" :key="Rindex">
+                    <view class="left">
+						<view class="face">
+							<image :src="row.avatarUrl || `/static/img/face.jpg`"></image>
+						</view>
+					</view>
+					<view class="right">
+						<view class="name-date">
+							<view class="username">
+								{{row.customerId}}
+							</view>
+							<view class="date">
+								{{row.commentTime}}
+							</view>
+						</view>
+						<view class="first">
+							<view class="rat">
+								{{row.comment}}
+							</view>
+							<view class="img-video">
+								<view class="box" v-for="item in row.imgs" @tap="showBigImg(item,row.imgs)" :key="item">
+									<image mode="aspectFill" :src="item"></image>
+								</view>
+							</view>
+						</view>
+					</view>
+                </view>
+                <!-- 用户评论 本来的 -->
+				<!-- <view class="row" v-for="(row,Rindex) in ratingsList" :key="Rindex">
 					<view class="left">
 						<view class="face">
 							<image :src="row.face"></image>
@@ -65,7 +94,7 @@
 							</view>
 						</view>
 					</view>
-				</view>
+				</view> -->
 			</view>
 		</view>
 	</view>
@@ -78,13 +107,10 @@
 				labelList:[
 					{name:'全部',number:25,type:'all'},
 					{name:'好评',number:23,type:'good'},
-					{name:'中评',number:1,type:'secondary'},
-					{name:'差评',number:1,type:'poor'},
-					{name:'有图',number:12,type:'img'},
-					{name:'视频',number:2,type:'video'},
-					{name:'追加',number:2,type:'append'}
+					{name:'差评',number:0,type:'poor'},
 				],
-				labelIndex:0,
+                labelIndex:0,
+                labelType:'all',
 				ratingsList:[
 					{id:1,username:"大黑哥",face:"/static/img/face.jpg",date:'2019-04-21',spec:"规格: XL",grade:"good",
 						first:{content:"好看，可以，不愧是专业的，才拿到手上就研究了半天才装上",
@@ -119,7 +145,9 @@
 				showFullscreenBtn:true,
 				showPlayBtn:true,
 				isPlayVideo:true,
-				videoSrc:''
+                videoSrc:'',
+                // THE NOW
+                CommentList:[],
 
 			};
 		},
@@ -135,10 +163,45 @@
 		//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
 		onReachBottom() {
 			uni.showToast({ title: '触发上拉加载' });
-		},
+        },
+        onLoad({ productCode }){
+            this.GetCommentList(productCode)
+        },
 		methods: {
-			loadRatings(index){
-				this.labelIndex = index;
+            init(){
+                this.GetCommentList()
+            },
+            async GetCommentList(productCode){
+                let response = await this.$api.GetCommentList(productCode)
+                let isGood = 0
+                let isPoor = 0
+                Array.isArray(response.data) && response.data.map(item=>{
+                    const { pic1, pic2, pic3 } = item
+                    item.imgs = []
+                    pic1 && item.imgs.push(pic1)
+                    pic2 && item.imgs.push(pic2)
+                    pic3 && item.imgs.push(pic3)
+
+                    // debugger
+
+                    (item.isGood == '1') && isGood++
+                    (item.isGood == '0') && isPoor++
+                })
+                this.CommentList = response.data
+
+                // debugger
+
+                console.log(isGood,isPoor)
+
+                this.labelList.map(row=>{
+                    (row.type == 'all') && (row.number = response.data.length);
+                    (row.type == 'good') && (row.number = response.data.filter(item=>item.isGood == '1').length);
+                    (row.type == 'poor') && (row.number = response.data.filter(item=>item.isGood == '0').length);
+                })
+            },
+			loadRatings(label,index){
+                this.labelIndex = index
+                console.log(label)
 				uni.showToast({
 					title:"切换评论列表"
 				})
@@ -176,7 +239,10 @@
 					urls: srclist
 				});
 			}
-		},
+        },
+		computed:{
+			
+		}
 	}
 </script>
 

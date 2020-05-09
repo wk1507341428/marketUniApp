@@ -17,7 +17,7 @@
 			
 			<view class="icon-btn">
 				<view class="icon yuyin-home"></view>
-				<view class="icon tongzhi" @tap="toMsg"></view>
+				<!-- <view class="icon tongzhi" @tap="toMsg"></view> -->
 			</view>
 		</view>
 		<!-- 占位 -->
@@ -46,42 +46,14 @@
 				class="category"
 				v-for="(row, index) in categoryList"
 				:key="index"
-				@tap="tips(row)"
+				@tap="toMore(row)"
 			>
-				<view class="img"><image :src="row.img"></image></view>
-				<view class="text">{{ row.name }}</view>
+				<view class="img"><image :src="row.categoryPic"></image></view>
+				<view class="text">{{ row.categoryName }}</view>
 			</view>
 		</view>
 		<!-- 广告图 -->
 		<view class="banner"><image src="/static/img/banner.jpg"></image></view>
-		<!-- 活动区 -->
-		<!-- <view class="promotion">
-			<view class="text">优惠专区</view>
-			<view class="list">
-				<view
-					class="column"
-					v-for="(row, index) in Promotion"
-					@tap="toPromotion(row)"
-					:key="index"
-				>
-					<view class="top">
-						<view class="title">{{ row.title }}</view>
-						<view class="countdown" v-if="row.countdown">
-							<view>{{ row.countdown.h }}</view>
-							:
-							<view>{{ row.countdown.m }}</view>
-							:
-							<view>{{ row.countdown.s }}</view>
-						</view>
-					</view>
-					<view class="left">
-						<view class="ad">{{ row.ad }}</view>
-						<view class="into">点击进入</view>
-					</view>
-					<view class="right"><image :src="row.img"></image></view>
-				</view>
-			</view>
-		</view> -->
         <!-- 电梯层 -->
         <view v-for="(info,index) in elevatorList" :key="index" class="goods-list">
             <view class="title">
@@ -125,91 +97,8 @@ export default {
 			currentSwiper: 0,
 			// 轮播图片
 			swiperList: [],
-			// 分类菜单
-			categoryList: [
-				{ id: 1, name: '办公', img: '/static/img/category/1.png' },
-				{ id: 2, name: '家电', img: '/static/img/category/2.png' },
-				{ id: 3, name: '服饰', img: '/static/img/category/3.png' },
-				{ id: 4, name: '日用', img: '/static/img/category/4.png' },
-				{ id: 5, name: '蔬果', img: '/static/img/category/5.png' },
-				{ id: 6, name: '运动', img: '/static/img/category/6.png' },
-				{ id: 7, name: '书籍', img: '/static/img/category/7.png' },
-				{ id: 8, name: '文具', img: '/static/img/category/8.png' }
-			],
+            categoryList:[],
 			Promotion: [],
-			//猜你喜欢列表
-			productList: [
-				{
-					goods_id: 0,
-					img: '/static/img/goods/p1.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 1,
-					img: '/static/img/goods/p2.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 2,
-					img: '/static/img/goods/p3.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 3,
-					img: '/static/img/goods/p4.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 4,
-					img: '/static/img/goods/p5.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 5,
-					img: '/static/img/goods/p6.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 6,
-					img: '/static/img/goods/p7.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 7,
-					img: '/static/img/goods/p8.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 8,
-					img: '/static/img/goods/p9.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				},
-				{
-					goods_id: 9,
-					img: '/static/img/goods/p10.jpg',
-					name: '商品名称商品名称商品名称商品名称商品名称',
-					price: '￥168',
-					slogan: '1235人付款'
-				}
-			],
             loadingText: '正在加载...',
             // 电梯层数据
             elevatorList: []
@@ -229,26 +118,7 @@ export default {
 	},
 	//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
 	onReachBottom() {
-		uni.showToast({ title: '触发上拉加载' });
-		let len = this.productList.length;
-		if (len >= 40) {
-			this.loadingText = '到底了';
-			return false;
-		}
-		// 演示,随机加入商品,生成环境请替换为ajax请求
-		let end_goods_id = this.productList[len - 1].goods_id;
-		for (let i = 1; i <= 10; i++) {
-			let goods_id = end_goods_id + i;
-			let p = {
-				goods_id: goods_id,
-				img:
-					'/static/img/goods/p' + (goods_id % 10 == 0 ? 10 : goods_id % 10) + '.jpg',
-				name: '商品名称商品名称商品名称商品名称商品名称',
-				price: '￥168',
-				slogan: '1235人付款'
-			};
-			this.productList.push(p);
-		}
+		uni.showToast({ title: '触发上拉加载' })
 	},
 	onLoad() {
 		//开启定时器
@@ -291,6 +161,7 @@ export default {
         async getCategoryList(){
             const response = await API.GetCateList()
             let { data, total } = response
+            this.categoryList = data
             // 这里感觉有一点不对劲，我需要遍历分类数组去查询它的产品？
             Array.isArray(data) && data.map(async item => {
                 const { categoryCode, merchantId, categoryName } = item
@@ -523,7 +394,7 @@ page{position: relative;background-color: #fff;}
 		}
 	}
 	.icon-btn {
-		width: 120upx;
+		width: 60upx;
 		height: 60upx;
 		flex-shrink: 0;
 		display: flex;

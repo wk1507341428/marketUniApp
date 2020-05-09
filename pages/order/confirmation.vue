@@ -29,7 +29,10 @@
 					</view>
 					<view class="info">
 						<view class="title">{{row.productName}}</view>
-						<view class="spec">选择{{row.spec}} 数量:{{row.number}}</view>
+                        <view class="spec-box">
+                            <view v-for="spec in row.specDTOS" :key="spec.id" class="spec">{{`${spec.specName}:${spec.properties[0].propertyName}`}}</view>
+                            <view class="spec">数量：{{ row.number }}</view>
+                        </view>
 						<view class="price-number">
 							<view class="price">￥{{row.price * row.number}}</view>
 							<view class="number">
@@ -160,16 +163,19 @@ export default {
         // 查询商品详情并且组织数据
         GetProductDetail(){
             const BUYLIST = this.BUYLIST
+            console.log(BUYLIST,"BUYLIST")
             Array.isArray(BUYLIST) && BUYLIST.map(async item => {
-                const { id, spec, number } = item
-                const response = await API.GetProductDetail(id)
+                const { id, number, specDTOS } = item
+                let response = await API.GetProductDetail(id)
                 let { data } = response
                 data.number = number
-                data.spec = spec
-                // 处理后的数据
-                this.buylistCur.push(data)
                 // 计算总金额
                 this.goodsPrice += data.price * data.number
+
+                // 这里覆盖下原来的的规格属性
+                data.specDTOS = specDTOS
+                // 处理后的数据
+                this.buylistCur.push(data)
             })
         },
         // 获取默认地址
@@ -220,19 +226,14 @@ export default {
                     productName: good.productName,
                     productNum: good.number,
                     productPrice: good.price,
-                    properties:[
-                        {
-                            propName: "前端数据",
-                            propValue: "前端数据—01"
-                        }
-                    ]
+                    properties: good.specDTOS
                 })
             })
 
             return { 
                 freight, 
                 remark, 
-                customerId, 
+                customerId: uni.getStorageSync(this.$constants.CUSTOMERID), 
                 merchantId, 
                 addressId: recinfo.id,
                 items, 
@@ -318,8 +319,8 @@ export default {
 				width: 100%;
 				height: 22vw;
 				overflow: hidden;
-				display: flex;
-				flex-wrap: wrap;
+				// display: flex;
+				// flex-wrap: wrap;
 				position: relative;
 				.title{
 					width: 100%;
@@ -330,17 +331,20 @@ export default {
 					// text-align: justify;
 					overflow: hidden;
 				}
-				.spec{
-					font-size: 22upx;
-					background-color: #f3f3f3;
-					color: #a7a7a7;
-					height: 40upx;
-					display: flex;
-					align-items: center;
-					padding: 0 10upx;
-					border-radius: 20upx;
-					margin-bottom: 20vw;
-				}
+                .spec-box{
+                    display: flex;
+                    margin-top: 10upx;
+                    .spec{
+                        font-size: 22upx;
+                        background-color: #f3f3f3;
+                        color: #a7a7a7;
+                        line-height: 40upx;
+                        padding: 0 10upx;
+                        margin-right: 10upx;
+                        // border-radius: 20upx;
+                        // margin-bottom: 20vw;
+                    }
+                }
 				.price-number{
 					position: absolute;
 					width: 100%;

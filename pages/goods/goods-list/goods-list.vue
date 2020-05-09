@@ -11,8 +11,8 @@
 		<!-- 商品列表 -->
 		<view class="goods-list">
 			<view class="product-list">
-				<view class="product" v-for="(goods) in productsList" :key="goods.categoryCode" @tap="toGoods(goods)">
-					<image mode="widthFix" src="/static/img/goods/p1.jpg"></image>
+				<view class="product" v-for="(goods,index) in productsList" :key="index" @click="toGoods(goods)">
+					<image mode="widthFix" :src="goods.pic || '/static/img/goods/p3.jpg'"></image>
 					<view class="name">{{goods.productName}}</view>
 					<view class="info">
 						<view class="price">¥{{goods.price}}</view>
@@ -88,7 +88,6 @@ export default {
 	methods:{
 		//商品跳转
 		toGoods(item){
-			uni.showToast({title: '商品'+item.productCode,icon:"none"});
 			uni.navigateTo({
 				url: `../goods?productCode=${item.productCode}`
 			});
@@ -118,7 +117,7 @@ export default {
         },
         // 获取商品列表
         async getDoodsListByCate(info={}){
-            let { categoryCode, merchantId, productsList } = this.$data
+            let { categoryCode, merchantId } = this.$data
             let params = {
                 needTotalCount: true,
                 offset: 0,
@@ -130,11 +129,9 @@ export default {
             const response = await API.GetProductsByCate(Object.assign(params,info))
             const { data, total } = response
 
-            for ( let i=0; i<10; i++ ){
-                productsList = productsList.concat(data)
-            }
+            console.log(data,"<<<datadata")
 
-            this.productsList = productsList
+            this.productsList = data
             this.total = total
         }
 	}

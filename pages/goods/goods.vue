@@ -82,9 +82,14 @@
 				<view class="content">
 					<view class="title">选择规格：</view>
 					<view class="sp">
-						<view v-for="(item,index) in goodsData.spec" :class="[index==selectSpec?'on':'']" @tap="setSelectSpec(index)" :key="index">{{item}}</view>
+                        <view v-for="(spec, i) in goodsDetail.specDTOS" :key="spec.id" class="spec-item">
+                            <view class="spec-title">{{ spec.specName }}</view>
+                            <view class="property-box">
+                                <view v-for="(item,index) in spec.properties" :key="index" @tap="setSelectSpec(spec, i,index)" class="property" :class="[spec.selected == index ? 'on' : '']">{{ item.propertyName }}</view>
+                            </view>
+                        </view>
 					</view>
-					<view class="length" v-if="selectSpec!=null">
+					<view class="length" v-if="selectSpecFlag">
 						<view class="text">数量</view>
 						<view class="number">
 							<view class="sub" @tap.stop="sub">
@@ -129,39 +134,36 @@
 				<view class="text">选择</view>
 				<view class="content">
 					<view>选择规格：</view>
-					<view class="sp">
-						<view v-for="(item,index) in spec" :key="index" :class="[index==selectSpec?'on':'']">{{item}}</view>
-					</view>
-					
 				</view>
 				<view class="arrow"><view class="icon xiangyou"></view></view>
 			</view>
 		</view>
 		<!-- 评价 -->
-		<!-- <view class="info-box comments" id="comments">
+		<view class="info-box comments" id="comments">
 			<view class="row">
-				<view class="text">商品评价({{goodsData.comment.number}})</view>
+				<view class="text">商品评价({{commentList.length}})</view>
 				<view class="arrow" @tap="toRatings">
-					<view class="show" @tap="showComments(goodsData.id)">
+					<view class="show">
 						查看全部
 						<view class="icon xiangyou"></view>
 					</view>
 				</view>
 			</view>
-			<view class="comment" @tap="toRatings">
+			<view v-if="commentList.length>0" class="comment" @tap="toRatings">
 				<view class="user-info">
-					<view class="face"><image :src="goodsData.comment.userface"></image></view>
-					<view class="username">{{goodsData.comment.username}}</view>
+					<view class="face"><image :src="commentList[0].avatarUrl"></image></view>
+					<view class="username">{{commentList[0].customerId}}</view>
 				</view>
 				<view class="content">
-					{{goodsData.comment.content}}
+					{{commentList[0].comment}}
 				</view>
 			</view>
-		</view> -->
+		</view>
 		<!-- 详情 -->
 		<view class="description">
 			<view class="title">———— 商品详情 ————</view>
-			<view class="content"><rich-text :nodes="descriptionStr"></rich-text></view>
+			<!-- <view class="content"><rich-text :nodes="descriptionStr"></rich-text></view> -->
+			<view v-if="goodsDetail.detailDesc" class="content"><rich-text :nodes="goodsDetail.detailDesc"></rich-text></view>
 		</view>
 		<!-- 底部菜单 -->
 		<view class="footer">
@@ -170,7 +172,7 @@
 					<view class="icon fenxiang"></view>
 					<view class="text">分享</view>
 				</view>
-				<view class="box" @tap="toChat">
+				<view class="box">
 					<view class="icon kefu"></view>
 					<view class="text">客服</view>
 				</view>
@@ -243,8 +245,7 @@ export default {
             descriptionStr:'<div style="text-align:center;"><img width="100%" src="https://ae01.alicdn.com/kf/HTB1t0fUl_Zmx1VjSZFGq6yx2XXa5.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB1LzkjThTpK1RjSZFKq6y2wXXaT.jpg"/><img width="100%" src="https://ae01.alicdn.com/kf/HTB18dkiTbvpK1RjSZPiq6zmwXXa8.jpg"/></div>',
             productCode: 0,     // 商品Id
             number: 1,
-            spec: ["前端数据-01","前端数据-02"],
-            selectSpec: null, //选中规格
+            commentList: []
 		};
 	},
 	onLoad(option) {
@@ -256,6 +257,7 @@ export default {
         
 		//option为object类型，会序列化上个页面传递的参数
         const { productCode } = option
+        console.log(productCode,`productCode`)
         if( !productCode ) {
              uni.showModal({
                 title: `非法进入`,
@@ -294,6 +296,13 @@ export default {
 	methods: {
         init(){
             this.GetProductDetail()
+            this.GetCommentList()
+        },
+        // 获取评论
+        async GetCommentList(){
+            const { productCode } = this.$data
+            let response = await this.$api.GetCommentList(productCode)
+            this.commentList = response.data
         },
         // 获取商品详情
         async GetProductDetail(){
@@ -306,6 +315,7 @@ export default {
             this.swiperList = swiperList
             this.goodsDetail = data
             this.loadCollectFlag(data)
+            
         },
         // 判断当前用户是否已经收藏过该商品
         loadCollectFlag(goods){
@@ -359,7 +369,7 @@ export default {
 		},
 		// 加入购物车
 		joinCart(){
-			if(this.selectSpec == null){
+			if(!this.selectSpecFlag){
 				return this.showSpec(()=>{
                     this.cartList()
 				})
@@ -387,7 +397,7 @@ export default {
         },
 		//立即购买
 		buy(){
-			if(this.selectSpec==null){
+			if(!this.selectSpecFlag){
 				return this.showSpec(()=>{
 					this.toConfirmation();
 				});
@@ -396,14 +406,15 @@ export default {
 		},
 		//商品评论
 		toRatings(){
+            const { productCode } = this.$data
 			uni.navigateTo({
-				url:'ratings/ratings'
+				url:`./ratings/ratings?productCode=${productCode}`
 			})
 		},
         //跳转确认订单页面
         // TODO 这里跳转订单页面 还是需要封装成公共的
 		toConfirmation(){
-            const { productCode, number, spec, selectSpec } = this.$data
+            const { productCode, number, goodsDetail } = this.$data
             // 记录商品id
             let id = productCode
 
@@ -415,7 +426,15 @@ export default {
             // this.$store.dispatch('ADD_BUYLIST',[1,2,3,4])
 
             let tmpList = []
-            let goods = { id, spec: spec[selectSpec], number }
+            // 这里需要做一个处理，把用户选择的规格填进去
+            let { specDTOS } = goodsDetail
+            specDTOS = JSON.parse(JSON.stringify(specDTOS))
+            Array.isArray(specDTOS) && specDTOS.forEach(item=>{
+                const { selected } = item
+                item.properties = [ item.properties[selected] ]
+            })
+
+            let goods = { id, number, specDTOS }
             tmpList.push(goods)
 
             this.$store.dispatch('ADD_BUYLIST', tmpList)
@@ -424,13 +443,10 @@ export default {
                 url:'../order/confirmation'
             })
 		},
-		//跳转评论列表
-		showComments(goodsid){
-			
-		},
 		//选择规格
-		setSelectSpec(index){
-			this.selectSpec = index;
+        setSelectSpec(spec, i, index){
+            spec.selected = index
+            this.goodsDetail.specDTOS = Object.assign([],this.goodsDetail.specDTOS)
 		},
 		//减少数量
 		sub(){
@@ -481,13 +497,22 @@ export default {
 		hideSpec() {
 			this.specClass = 'hide'
 			//回调
-			this.selectSpec != null && this.specCallback && this.specCallback()
+			this.selectSpecFlag && this.specCallback && this.specCallback()
 			this.specCallback = false;
 			setTimeout(() => {
 				this.specClass = 'none'
 			}, 200);
 		},
         discard() {},
+    },
+    computed:{
+        // 这个是检测用户有没有选规格
+        selectSpecFlag(){
+            let specDTOS = this.goodsDetail.specDTOS
+            let flag = false
+            flag = Array.isArray(specDTOS) && specDTOS.every( item => item.selected || item.selected == 0 )
+            return flag
+        }
     }
 };
 </script>
@@ -723,6 +748,7 @@ page {
 			.sp {
 				width: 100%;
 				display: flex;
+
 				view {
 					background-color: #f6f6f6;
 					padding: 5upx 10upx;
@@ -808,6 +834,9 @@ page {
 		align-items: center;
 		font-size: 26upx;
 		color: #999;
+	}
+	.content{
+		margin-bottom: 150upx;
 	}
 }
 .footer {
@@ -957,18 +986,28 @@ page {
 			margin: 30upx 0;
 		}
 		.sp {
-			display: flex;
-			view {
-				font-size: 28upx;
-				padding: 5upx 20upx;
-				border-radius: 8upx;
-				margin: 0 30upx 20upx 0;
-				background-color: #f6f6f6;
-				&.on {
-					padding: 3upx 18upx;
-					border: solid 1upx #f47925;
-				}
-			}
+            .spec-item{     
+                .spec-title{
+                    font-size: 28upx;
+                    font-weight: 800;
+                    margin-bottom: 10upx;
+                }
+                .property-box{
+                    display: flex;
+                    flex-wrap: wrap;
+                    .property {
+                        font-size: 28upx;
+                        padding: 5upx 20upx;
+                        border-radius: 8upx;
+                        margin: 0 30upx 20upx 0;
+                        background-color: #f6f6f6;
+                        &.on {
+                            padding: 3upx 18upx;
+                            border: solid 1upx #f47925;
+                        }
+                    }
+                }        
+            }
 		}
 		.length{
 			margin-top: 30upx;

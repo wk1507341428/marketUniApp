@@ -17,13 +17,13 @@
             <button open-type="getUserInfo" @getuserinfo="toLogin" class="login-box">
                 <!-- 头像 -->
                 <view class="left">
-                    <image :src="user.face"></image>
+                    <image :src="USER.face"></image>
                 </view>
                 <!-- <button type="primary" open-type="getUserInfo" @getuserinfo="toLogin">获取用户信息</button> -->
                 <!-- 昵称,个性签名 -->
                 <view class="right">
-                    <view class="username">{{user.username}}</view>
-                    <view class="signature">{{user.signature}}</view>
+                    <view class="username">{{USER.username}}</view>
+                    <view class="signature">{{USER.signature}}</view>
                 </view>
              </button>
 			<!-- 二维码按钮 -->
@@ -73,6 +73,7 @@
     import * as API from '../../../request'
     import constants from '@/constants/index.js'
     import config from '@/config'
+    import { mapState } from 'vuex'
 	export default {
 		data() {
 			return {
@@ -138,39 +139,6 @@
 			this.statusHeight = plus.navigator.getStatusbarHeight();
 			// #endif
 		},
-		onReady(){
-			//此处，演示,每次页面初次渲染都把登录状态重置
-			uni.setStorage({
-				key: 'UserInfo',
-				data: false,
-				success: function () {
-				},
-				fail:function(e){
-				}
-			});
-		},
-		onShow(){
-			uni.getStorage({
-				key: constants.USERINFOBYWEIXIN,
-				success: (res)=>{
-					if(!res.data){
-						if(this.isfirst){
-							//this.toLogin();
-						}
-						return ;
-                    }
-                    // console.log(res)
-                    res = res.data
-                    this.user = Object.assign({},this.user,{
-                        username: res.nickName,
-                        face: res.avatarUrl
-                    })
-				},
-				fail:(e)=>{
-					//this.toLogin(); 
-				}
-			});
-		},
 		methods: {
 			//消息列表
 			toMsg(){
@@ -193,58 +161,8 @@
 				})
 			},
 			toLogin(){
-                uni.showToast({title: '请登录',icon:"none"})
-                const _this = this
-                uni.login({
-                    success(code){
-                        uni.getUserInfo({
-                            provider: "weixin",
-                            success: async (result) => {
-                                console.log('getUserInfo success', result)
-                                const { avatarUrl, nickName, gender } = result.userInfo
-                                const response = await API.login({
-                                    code: code.code,
-                                    merchantId: config.merchantId,
-                                    avatarUrl,
-                                    nickName,
-                                    gender
-                                })
-                                // 记录本地存储
-								uni.setStorageSync(constants.USERINFOBYWEIXIN,result.userInfo)
-                                uni.setStorageSync(constants.TOKEN,response.data.token)
-                                uni.setStorageSync(constants.CUSTOMERID,response.data.customerId)
-                                // {"token":"t3118389269446848","customerId":"c467059840401372"}
-                                
-                                _this.user = Object.assign({},_this.user,{
-                                    username: nickName,
-                                    face: avatarUrl
-                                })
-                            },
-                            fail: (error) => {
-                                console.log('getUserInfo fail', error)
-                            }
-                        })
-                    }
-                })
-                uni.getUserInfo({
-					provider: "weixin",
-					success: (result) => {
-						console.log('getUserInfo success', result);
-						this.hasUserInfo = true;
-						this.userInfo = result.userInfo;
-					},
-					fail: (error) => {
-						console.log('getUserInfo fail', error)
-					}
-				})
-			},
-			// toLogin(){
-			// 	uni.showToast({title: '请登录',icon:"none"});
-			// 	uni.navigateTo({
-			// 		url:'../../login/login'
-			// 	})
-			// 	this.isfirst = false;
-            // },
+                this.$store.dispatch('USER_LOGIN')
+            },
             getPhoneNumber(e) {  
                 console.log(e)
             }, 
@@ -269,7 +187,12 @@
 					url:url
 				})
 			}
-		}
+        },
+        computed:{
+            ...mapState({
+                USER: state => state.USER
+            })
+        }
 	} 
 </script>
 <style lang="scss">
