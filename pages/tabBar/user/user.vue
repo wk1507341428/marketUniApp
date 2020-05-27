@@ -45,12 +45,12 @@
 		<view class="order">
 			<!-- 订单类型 -->
 			<view class="list">
-				<view class="box" v-for="(row,index) in orderList" :key="index" @tap="toOrderList(index)">
+				<button class="box" v-for="(row,index) in orderList" :key="index" open-type="getUserInfo" @getuserinfo="toOrderList(index)">
 					<view class="img">
 						<view class="icon" :class="row.icon"></view>
 					</view>
 					<view class="text">{{row.text}}</view>
-				</view>
+				</button>
 			</view>
 		</view>
 		<!-- 工具栏 -->
@@ -147,8 +147,10 @@
 				})
 			},
 			toOrderList(index){
-				uni.setStorageSync('tbIndex',index);
-				uni.navigateTo({url:'../../user/order_list/order_list?tbIndex='+index}) 
+                this.$store.dispatch('USER_LOGIN', ()=>{
+                    uni.setStorageSync('tbIndex',index);
+                    uni.navigateTo({url:'../../user/order_list/order_list?tbIndex='+index}) 
+                })
 			},
 			toSetting(){
 				uni.navigateTo({
@@ -254,6 +256,9 @@
         // position: static;
         text-align: left;
         line-height: normal;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
     }
     .login-box{
 		width: 92%;
@@ -261,6 +266,7 @@
         background-color: #f06c7a;   
 		display: flex;
 		align-items: center;
+        // position: static;
     }
 	.user{
 		background-color: #f06c7a;

@@ -76,7 +76,6 @@ export function delAddress(data){
  * @param {type} 
  * @return: 
  */
-// TODO
 export function GetCateList(data="c123123123"){
     return http.get(`/mall/product/v1/categories/${data}`).withLoading().exec()
 }
@@ -153,6 +152,8 @@ export function GetOrderList(data){
     return http.post(`/mall/order/v1/orders`,data).withLoading().exec()
 }
 
+
+
 /**
  * @description: 查询banner，根据商家ID
  * @param {type} 
@@ -199,5 +200,51 @@ export default {
      */    
     AddComment(data){
         return http.post(`/mall/product/v1/comment/add`, data).withLoading().exec()
+    },
+	
+	/**
+	 * @description: 增加评论
+	 * @param {type} 
+	 * @return: 
+	 */  
+	GetExpressList(data="c123123123"){
+		return http.get(`/mall/delivery/v1/deliveries/${data}`).withLoading().exec()
+    },
+
+    /**
+     * @description: 维护到购物车
+     * @param {type} 
+     * @return: 
+     */    
+    SetCartList(data){
+        return http.post(`/mall/cart/v1/cart` ,Object.assign(data,{ customerId: 'c123123123' })).withLoading().exec()
+    },
+
+    /**
+     * @description: 查询购物车
+     * @param {type} 
+     * @return: 
+     */   
+    GetCartList(customerId = 'c123123123'){
+        return http.get(`/mall/cart/v1/carts/${customerId}`).withLoading().exec()
+    },
+
+
+    /**
+     * @description: 删除购物车记录
+     * @param {type} 
+     * @return: 
+     */    
+    DelCartList(data){
+        return http.post(`/mall/cart/v1/cart/clear` ,Object.assign(data,{ customerId: 'c123123123' })).withLoading().exec()
+    },
+
+    /**
+     * @description: 更新订单状态
+     * @param {type} 
+     * @return: 
+     */
+    UpdateOrderState(data){
+        return http.post(`/mall/order/v1/order`, data).withLoading().exec()
     }
 }

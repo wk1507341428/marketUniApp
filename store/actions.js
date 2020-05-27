@@ -35,7 +35,12 @@ export default {
      * @param {type} 
      * @return: 
      */    
-    [ActionTypes.USER_LOGIN]({ dispatch }){
+    [ActionTypes.USER_LOGIN]({ dispatch }, callBack){
+        // 如果已经登录过里 就没必要登录了
+        if(uni.getStorageSync(constants.USERINFOBYWEIXIN)){
+            typeof callBack === 'function' && callBack()
+            return
+        }
         uni.login({
             success({ code }){
                 uni.getUserInfo({
@@ -59,6 +64,8 @@ export default {
                             username: nickName,
                             face: avatarUrl
                         }))
+
+                        typeof callBack === 'function' && callBack()
                     },
                     fail: (error) => {
                         console.log('getUserInfo fail', error)
@@ -74,5 +81,34 @@ export default {
      */
     [ActionTypes.ADD_USERINFO]({ commit }, payload){
         commit(ActionTypes.ADD_USERINFO, payload)
+    },
+    /**
+     * @description: 用户支付的公共方法
+     * @param { orderId:String, callBack:Function } 
+     * @return: 
+     */    
+    async [ActionTypes.USER_PAY]({ commit }, { orderId , callBack}){
+        let { data } =  await API.pay(orderId)
+        data = JSON.parse(data)
+        uni.requestPayment({
+            timeStamp: data.timeStamp,
+            nonceStr:data.nonceStr,
+            package: data.package,
+            paySign:data.sign,
+            signType:data.signType,
+            complete(data){
+                console.log(data,"<<<<回调", callBack)
+                typeof callBack === 'function' && callBack(data)
+            }
+        })
+    },
+
+    /**
+     * @description: 用户添加商品到购物车
+     * @param {type} 
+     * @return: 
+     */    
+    async [ActionTypes.ADDCARTLIST]({ commit }, payload){
+        
     }
 }

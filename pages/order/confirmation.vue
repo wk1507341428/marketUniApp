@@ -25,12 +25,12 @@
 			<view class="row" v-for="(row,index) in buylistCur" :key="index">
 				<view class="goods-info">
 					<view class="img">
-						<image src="/static/img/goods/p1.jpg"></image>
+						<image :src="row.pic"></image>
 					</view>
 					<view class="info">
 						<view class="title">{{row.productName}}</view>
                         <view class="spec-box">
-                            <view v-for="spec in row.specDTOS" :key="spec.id" class="spec">{{`${spec.specName}:${spec.properties[0].propertyName}`}}</view>
+                            <view v-for="spec in row.specDTOS" :key="spec.id" class="spec">{{`${spec.specName}:${spec.selectSpec[0].propertyName}`}}</view>
                             <view class="spec">数量：{{ row.number }}</view>
                         </view>
 						<view class="price-number">
@@ -80,6 +80,18 @@
 					￥+{{freight|toFixed}}
 				</view>
 			</view>
+			<view class="row">
+				<view class="nominal">
+					选择快递
+				</view>
+				<view class="content">
+					<view class="uni-list-cell-db">
+						<picker @change="bindPickerChange" :value="expressIndex" range-key="deliveryName" :range="expressList">
+							<view class="uni-input">{{expressList[expressIndex].deliveryName}}</view>
+						</picker>
+					</view>
+				</view>
+			</view>
 			<!-- <view class="row">
 				<view class="nominal">
 					积分抵扣
@@ -109,7 +121,7 @@ export default {
 	data() {
 		return {
 			goodsPrice: 0,	//商品合计价格
-			freight:12.00,	//运费
+			freight:0,	//运费
 			remark:'',		//备注
 			int:1200,		//抵扣积分
 			deduction:0,	//抵扣价格
@@ -118,6 +130,10 @@ export default {
             goodsDetail: {},    // 订单商品信息
             buylistCur: [],		//订单列表 处理后的数据
             recinfo: {},     // 默认地址 or 选择后的地址
+			
+			
+			expressList: [],
+			expressIndex: 0,
 		};
     },
     computed:{
@@ -159,6 +175,17 @@ export default {
         init(){
             this.GetProductDetail()
             this.getAddressDefault()
+			this.GetExpressList()
+        },
+		// 获取物流信息列表
+		async GetExpressList(){
+			let { data } = await this.$api.GetExpressList()
+			this.expressList = data
+			console.log(this.expressList,"this.expressList")
+		},
+        bindPickerChange: function(e) {
+            console.log('picker发送选择改变，携带值为', e.target)
+            this.expressIndex = e.target.value
         },
         // 查询商品详情并且组织数据
         GetProductDetail(){
@@ -214,19 +241,26 @@ export default {
             //     "orderStatus": "string", // 订单状态
             //     "remark": "string"
             // }
-            const { freight, remark, buylistCur, recinfo } = this.$data
+            const { freight, remark, buylistCur, recinfo, expressList, expressIndex } = this.$data
             const sumPrice = this.sumPrice
             const { customerId, merchantId } = config
 
             let items = []
 
+            console.log(buylistCur,"<<<<")
+
+
             buylistCur.map(good => {
+                let specDTOS = JSON.parse(JSON.stringify(good.specDTOS))
+                specDTOS.map(item=>{
+                    item.properties = item.selectSpec
+                })
                 items.push({
                     productCode: good.productCode,
                     productName: good.productName,
                     productNum: good.number,
                     productPrice: good.price,
-                    properties: good.specDTOS
+                    properties: specDTOS
                 })
             })
 
@@ -237,7 +271,10 @@ export default {
                 merchantId, 
                 addressId: recinfo.id,
                 items, 
-                orderAmount:sumPrice  
+                orderAmount:sumPrice,
+				deliveryDTO:{
+					id: expressList[expressIndex].id
+				}
             }
         },
 		async toPay(){
@@ -245,8 +282,13 @@ export default {
             const paymentOrder = this.getParams()
             const response = await API.creatOrder(paymentOrder)
 
-            uni.redirectTo({
-                url:"../pay/payment/payment?amount="+this.sumPrice
+            // uni.redirectTo({
+            //     url:"../pay/payment/payment?amount="+this.sumPrice
+            // })
+
+            this.$store.dispatch('USER_LOGIN', ()=>{
+                uni.setStorageSync('tbIndex',0);
+                uni.navigateTo({url:'../user/order_list/order_list?tbIndex=0'}) 
             })
 			
 		},
@@ -457,4 +499,19 @@ export default {
 		}
 	}
 }
+.uni-list-cell-db{
+	border: 1px solid #d5d5d5;
+	padding: 0 20upx;
+	border-radius: 10upx;
+	color: #838383;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	&::after{
+		content: ">";
+		margin-left: 20upx;
+		transform: rotate(90deg);
+	}
+}
+
 </style>

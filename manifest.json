@@ -1,5 +1,5 @@
 {
-    "name" : "商城模板(更新一部分nvue页和subNvue导航栏)",
+    "name" : "商城小程序",
     "appid" : "__UNI__1A2E766",
     "description" : "",
     "versionName" : "1.2.0",
@@ -64,7 +64,7 @@
         /* 小程序特有相关  wx6661c6f8053640bf */
         "appid" : "wxed18cef5d401469b",
         "setting" : {
-            "urlCheck" : false,
+            "urlCheck" : true,
             "es6" : true,
             "postcss" : true,
             "minified" : true

@@ -11,7 +11,7 @@
 			<view class="tis" v-if="goodsList.length==0">购物车是空的哦~</view>
             <view class="row" v-for="(row,index) in goodsList" :key="index" >
 				<!-- 删除按钮 -->
-				<view class="menu" @tap.stop="deleteGoods(row.id)">
+				<view class="menu" @tap.stop="deleteGoods(row)">
 					<view class="icon shanchu"></view>
 				</view>
 				<!-- 商品 -->
@@ -25,21 +25,24 @@
 					<!-- 商品信息 -->
 					<view class="goods-info" @tap="toGoods(row)">
 						<view class="img">
-							<image :src="row.pic || '/static/img/goods/p3.jpg'"></image>
+							<image :src="row.productDTO.pic"></image>
 						</view>
 						<view class="info">
-							<view class="title">{{row.productName}}</view>
-							<view class="spec">规格：{{row.spec}}</view>
+							<view class="title">{{row.productDTO.productName}}</view>
+                            <view class="spec-box">
+                                <view v-for="spec in row.specDTOs" :key="spec.id" class="spec">{{`${spec.specName}:${spec.properties[0].propertyName}`}}</view>
+                                <view class="spec">数量：{{ row.num }}</view>
+                            </view>
 							<view class="price-number">
-								<view class="price">￥{{row.price}}</view>
+								<view class="price">￥{{row.productDTO.price}}</view>
 								<view class="number">
-									<view class="sub" @tap.stop="sub(index)">
+									<view class="sub" @tap.stop="sub(row)">
 										<view class="icon jian"></view>
 									</view>
 									<view class="input" @tap.stop="discard">
-										<input type="number" v-model="row.number" @input="sum($event,index)" />
+										<input type="number" v-model="row.num" @input="sum($event,index)" />
 									</view>
-									<view class="add"  @tap.stop="add(index)">
+									<view class="add"  @tap.stop="add(row)">
 										<view class="icon jia"></view>
 									</view>
 								</view>
@@ -78,13 +81,7 @@ export default {
 			showHeader:true,
 			selectedList:[],
 			isAllselected:false,
-			goodsList:[
-				// {id:1,img:'/static/img/goods/p1.jpg',name:'商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题',spec:'规格:S码',price:127.5,number:1,selected:false},
-				// {id:2,img:'/static/img/goods/p2.jpg',name:'商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题',spec:'规格:S码',price:127.5,number:1,selected:false},
-				// {id:3,img:'/static/img/goods/p3.jpg',name:'商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题',spec:'规格:S码',price:127.5,number:1,selected:false},
-				// {id:4,img:'/static/img/goods/p4.jpg',name:'商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题',spec:'规格:S码',price:127.5,number:1,selected:false},
-				// {id:5,img:'/static/img/goods/p5.jpg',name:'商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题',spec:'规格:S码',price:127.5,number:1,selected:false}
-			],
+			goodsList:[],
 			//控制滑动效果
 			theIndex:null,
 			oldIndex:null,
@@ -122,36 +119,12 @@ export default {
         init(){
             this.loadCartLis()
         },
-        // 加载本地购物车列表
-        loadCartLis(){
-            const CARTLIST = uni.getStorageSync(constants.CARTLIST)
-			console.log(CARTLIST,"CARTLISTCARTLIST")
+        // 查询购物车
+        async loadCartLis(){
+            const { data:CARTLIST } = await this.$api.GetCartList()
+            console.log(CARTLIST,"CARTLISTCARTLIST")
             this.goodsList = CARTLIST
         },
-		//加入商品 参数 goods:商品数据
-		joinGoods(goods){
-				/*
-				* 这里只是展示一种添加逻辑，模板并没有做从其他页面加入商品到购物车的具体动作，
-				* 在实际应用上，前端并不会直接插入记录到goodsList这一个动作，一般是更新列表和本地列表缓存。
-				* 一般商城购物车的增删改动作是由后端来完成的,
-				* 后端记录后返回前端更新前端缓存
-				*/
-				let len = this.goodsList.length;
-				let isFind = false;//是否找到ID一样的商品
-				for(let i=0;i<len;i++){
-					let row = this.goodsList[i];
-					if(row.id==goods.id )
-					{	//找到商品一样的商品
-						this.goodsList[i].number++;//数量自增
-						isFind = true;//找到一样的商品
-						break;//跳出循环
-					}
-				}
-				if(!isFind){
-					//没有找到一样的商品，新增一行到购物车商品列表头部
-					this.goodsList[i].unshift(goods);
-				}
-		},
 		//控制左滑删除效果-begin
 		touchStart(index,event){
 			//多点触控不触发
@@ -197,82 +170,89 @@ export default {
 			}
 		},
 		touchEnd(index,$event){
+            console.log('2222')
 			//结束禁止触发效果
 			this.isStop = false;
 		},
 		//控制左滑删除效果-end
 		//商品跳转
 		toGoods(item){
-            uni.showToast({title: '商品'+item.productCode,icon:"none"});
+            // uni.showToast({title: '商品'+item.productCode,icon:"none"});
             uni.navigateTo({
-                url: `../../goods/goods?productCode=${item.productCode}`
+                url: `../../goods/goods?productCode=${item.productDTO.productCode}`
             })
 		},
-		//跳转确认订单页面
+        //跳转确认订单页面
+        // TODO
 		toConfirmation(){
-                const { goodsList } = this.$data
-				let tmpList=[];
-				let len = goodsList.length;
-				for(let i=0; i<len; i++){
-					if(goodsList[i].selected) {
-						tmpList.push(goodsList[i])
-					}
-				}
-				if(tmpList.length<1){
-					uni.showToast({
-						title:'请选择商品结算',
-						icon:'none'
-					});
-					return ;
-                }
-
-                let tmpList_ = []
-                goodsList.map(item=>{
-                    let goods = { id: item.productCode, spec: item.spec, number: item.number }
-                    tmpList_.push(goods)
-                })
-
-                this.$store.dispatch('ADD_BUYLIST', tmpList_)
-
-                uni.navigateTo({
-                    url:'../../order/confirmation'
-                })
-				
-		},
-		//删除商品
-		deleteGoods(id){
-			let len = this.goodsList.length;
-			for(let i=0;i<len;i++){
-				if(id==this.goodsList[i].id){
-					this.goodsList.splice(i, 1);
-					break;
+            const { goodsList } = this.$data
+			let tmpList=[];
+			let len = goodsList.length;
+			for(let i=0; i<len; i++){
+				if(goodsList[i].selected) {
+					tmpList.push(goodsList[i])
 				}
 			}
-			this.selectedList.splice(this.selectedList.indexOf(id), 1);
-			this.sum();
-			this.oldIndex = null;
+			if(tmpList.length<1){
+				uni.showToast({
+					title:'请选择商品结算',
+					icon:'none'
+				});
+				return;
+            }
+
+            console.log(tmpList,"tmpList")
+
+
+            let tmpList_ = []
+            tmpList.map(item=>{
+                // selectSpec
+                Array.isArray(item.specDTOs) && item.specDTOs.map(info=>{
+                    info.selectSpec = info.properties
+                })
+
+                let goods = { id: item.productDTO.productCode, number: item.num, specDTOS: item.specDTOs }
+                tmpList_.push(goods)
+            })
+            this.$store.dispatch('ADD_BUYLIST', tmpList_)
+            uni.navigateTo({
+                url:'../../order/confirmation'
+            })
+		},
+		//删除商品
+		async deleteGoods(row){
+            const { cardGoodsId } = row
+
+            await this.$api.DelCartList({
+                ids: [cardGoodsId]
+            })
+
+            await this.loadCartLis()
+            this.selectedList = []
+            this.isAllselected = this.selectedList.length == this.goodsList.length && this.goodsList.length>0
+            this.sum()
+            this.oldIndex = null;
             this.theIndex = null;
-            
-            // 更新本地存储
-            uni.setStorageSync(constants.CARTLIST, this.goodsList)
             uni.showToast({ title: "删除成功" })
 		},
 		// 批量删除商品
-		deleteList(){
-			let len = this.selectedList.length;
-			while (this.selectedList.length>0)
-			{
-				this.deleteGoods(this.selectedList[0]);
-			}
-			this.selectedList = [];
-			this.isAllselected = this.selectedList.length == this.goodsList.length && this.goodsList.length>0;
-            this.sum();
+		async deleteList(){
+            await this.$api.DelCartList({
+                ids: this.selectedList
+            })
+
+            // 重新加载购物车
+            await this.loadCartLis()
+            uni.showToast({ title: "删除成功" })
+            this.selectedList = []
+            this.isAllselected = this.selectedList.length == this.goodsList.length && this.goodsList.length>0
+            this.sum()
 		},
 		// 选中商品
 		selected(index){
 			this.goodsList[index].selected = this.goodsList[index].selected?false:true;
-			let i = this.selectedList.indexOf(this.goodsList[index].id);
-			i>-1?this.selectedList.splice(i, 1):this.selectedList.push(this.goodsList[index].id);
+			let i = this.selectedList.indexOf(this.goodsList[index].cardGoodsId);
+			i>-1?this.selectedList.splice(i, 1):this.selectedList.push(this.goodsList[index].cardGoodsId);
 			this.isAllselected = this.selectedList.length == this.goodsList.length;
 			this.sum();
 		},
@@ -282,45 +262,76 @@ export default {
 			let arr = [];
 			for(let i=0;i<len;i++){
 				this.goodsList[i].selected = this.isAllselected? false : true;
-				arr.push(this.goodsList[i].id);
+				arr.push(this.goodsList[i].cardGoodsId);
 			}
 			this.selectedList = this.isAllselected?[]:arr;
 			this.isAllselected = this.isAllselected||this.goodsList.length==0?false : true;
 			this.sum();
 		},
 		// 减少数量
-		sub(index){
-			if(this.goodsList[index].number<=1){
-				return;
-			}
-			this.goodsList[index].number--;
-			this.sum();
+		async sub(row){
+            let { num, productDTO, specDTOs } = row
+            // 是1的话不能减了
+            if(num === 1) return
+            num-=1
+
+            const productId = productDTO.productCode
+            let productSpecis = []
+
+            // 收集已经选择的规格
+            Array.isArray(specDTOs) && specDTOs.forEach(item=>{
+                let { properties } = item
+                properties.map(info=>{
+                    productSpecis.push(info.id)
+                })
+            })
+
+            await this.$api.SetCartList({
+                productSpecis: productSpecis.toString(),
+                productId,
+                num
+            })
+            this.loadCartLis()
 		},
 		// 增加数量
-		add(index){
-			this.goodsList[index].number++;
-			this.sum();
+		async add(row){
+            let { num, productDTO, specDTOs } = row
+            num+=1
+
+            const productId = productDTO.productCode
+            let productSpecis = []
+
+            // 收集已经选择的规格
+            Array.isArray(specDTOs) && specDTOs.forEach(item=>{
+                let { properties } = item
+                properties.map(info=>{
+                    productSpecis.push(info.id)
+                })
+            })
+
+            await this.$api.SetCartList({
+                productSpecis: productSpecis.toString(),
+                productId,
+                num
+            })
+            this.loadCartLis()
 		},
 		// 合计
 		sum(e,index){
 			this.sumPrice=0;
-			let len = this.goodsList.length;
+            let len = this.goodsList.length;
 			for(let i=0;i<len;i++){
 				if(this.goodsList[i].selected) {
 					if(e && i==index){
-						this.sumPrice = this.sumPrice + (e.detail.value*this.goodsList[i].price);
+						this.sumPrice = this.sumPrice + (e.detail.value*this.goodsList[i].productDTO.price);
 					}else{
-						this.sumPrice = this.sumPrice + (this.goodsList[i].number*this.goodsList[i].price);
+						this.sumPrice = this.sumPrice + (this.goodsList[i].num*this.goodsList[i].productDTO.price);
 					}
 				}
 			}
 			this.sumPrice = this.sumPrice.toFixed(2);
 		},
-		discard() {
-			//丢弃
-		}
-		
-		
+		discard() {}
 	}
 }
 </script>
@@ -600,4 +611,18 @@ export default {
 			}
 		}
 	}
+    .spec-box{
+        display: flex;
+        margin-top: 10upx;
+        .spec{
+            font-size: 22upx;
+            background-color: #f3f3f3;
+            color: #a7a7a7;
+            line-height: 40upx;
+            padding: 0 10upx;
+            margin-right: 10upx;
+            // border-radius: 20upx;
+            // margin-bottom: 20vw;
+        }
+    }
 </style>

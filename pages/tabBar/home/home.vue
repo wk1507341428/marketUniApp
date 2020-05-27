@@ -23,7 +23,7 @@
 		<!-- 占位 -->
 		<view v-if="showHeader" class="place"></view>
 		<!-- 轮播图 -->
-		<view @click="pay" class="swiper">
+		<view class="swiper">
 			<view class="swiper-box">
 				<swiper circular="true" autoplay="true" @change="swiperChange">
 					<swiper-item v-for="swiper in swiperList" :key="swiper.id">
@@ -55,7 +55,7 @@
 		<!-- 广告图 -->
 		<view class="banner"><image src="/static/img/banner.jpg"></image></view>
         <!-- 电梯层 -->
-        <view v-for="(info,index) in elevatorList" :key="index" class="goods-list">
+        <view v-for="(info,index) in elevatorList" :key="index" v-if="info.children.length>0" class="goods-list">
             <view class="title">
 				<image src="/static/img/hua.png"></image>
 				{{ info.categoryName }}
@@ -68,7 +68,7 @@
 					:key="i"
                     @click="toGoods(product)"
 				>
-					<image mode="widthFix" :src="product.pic || '/static/img/goods/p3.jpg'"></image>
+					<image mode="widthFix" :src="product.pic"></image>
 					<view class="name">{{ product.productName }}</view>
 					<view class="info">
 						<view class="price">￥{{ product.price }}</view>
@@ -118,7 +118,7 @@ export default {
 	},
 	//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
 	onReachBottom() {
-		uni.showToast({ title: '触发上拉加载' })
+		// uni.showToast({ title: '触发上拉加载' })
 	},
 	onLoad() {
 		//开启定时器
@@ -131,23 +131,6 @@ export default {
         })
 	},
 	methods: {
-		// 测试支付
-		async pay(){
-			console.log("测试支付")
-			let response = await API.pay("O3090300890354416199")
-			console.log(JSON.parse(response.data))
-			response = JSON.parse(response.data)
-			uni.requestPayment({
-				timeStamp: response.timeStamp,
-				nonceStr:response.nonceStr,
-				package: response.package,
-				paySign:response.sign,
-				signType:response.signType,
-				complete(data){
-					console.log(222,data)
-				}
-			})
-		},
         init(){
             this.getCategoryList()
             this.getBannerList()

@@ -182,8 +182,8 @@
 				</view>
 			</view>
 			<view class="btn">
-				<view class="joinCart" @tap="joinCart">加入购物车</view>
-				<view class="buy" @tap="buy">立即购买</view>
+				<button class="joinCart" open-type="getUserInfo" @getuserinfo="joinCart">加入购物车</button>
+				<button class="buy" open-type="getUserInfo" @getuserinfo="buy">立即购买</button>
 			</view>
 		</view>
 	</view>
@@ -221,22 +221,11 @@ export default {
 			shareClass:'',//分享弹窗css类，控制开关动画
 			// 商品信息
 			goodsData:{
-				id:1,
-				name:"商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题商品标题",
-				price:"127.00",
-				number:1,
 				service:[
 					{name:"正品保证",description:"此商品官方保证为正品"},
 					{name:"极速退款",description:"此商品享受退货极速退款服务"},
 					{name:"7天退换",description:"此商品享受7天无理由退换服务"}
-				],
-				spec: ["前端数据-01","前端数据-02"],
-				comment:{
-					number:102,
-					userface:'../../static/img/face.jpg',
-					username:'大黑哥',
-					content:'很不错，之前买了很多次了，很好看，能放很久，和图片色差不大，值得购买！'
-				}
+				]
             },
             // 商品详情
             goodsDetail: {},
@@ -291,7 +280,7 @@ export default {
 	},
 	//上拉加载，需要自己在page.json文件中配置"onReachBottomDistance"
 	onReachBottom() {
-		uni.showToast({ title: '触发上拉加载' });
+		// uni.showToast({ title: '触发上拉加载' });
 	},
 	methods: {
         init(){
@@ -369,40 +358,77 @@ export default {
 		},
 		// 加入购物车
 		joinCart(){
-			if(!this.selectSpecFlag){
-				return this.showSpec(()=>{
-                    this.cartList()
-				})
-            }
-            this.cartList()
-        },
-        cartList(){
-            const { productCode, number, spec, selectSpec, goodsDetail } = this.$data
-            let goods = { ...goodsDetail, spec: spec[selectSpec], number, selected: false }
 
-            let CARTLIST = uni.getStorageSync(constants.CARTLIST)
-            if( !Array.isArray(CARTLIST) ){
-                CARTLIST = []
-            }
-            // 如果已经加入过了购物车
-            else{
-                const len = CARTLIST.filter(item=>item.productCode === productCode)
-                if(len.length > 0){
-                    return uni.showToast({title: "不要重复添加购物车"})
+            console.log("加入购物车")
+
+            this.$store.dispatch('USER_LOGIN', ()=>{
+                if(!this.selectSpecFlag){
+                    return this.showSpec(()=>{
+                        this.cartList()
+                    })
                 }
-            }
-            CARTLIST.push(goods)
-            uni.setStorageSync(constants.CARTLIST, CARTLIST)
+                this.cartList()
+            })
+        },
+        async cartList(){
+            const { productCode, number, goodsDetail } = this.$data
+
+            // 统计用户获取的规格 然后汇总下数据
+            let productSpeci = []
+            let { specDTOS } = goodsDetail
+            Array.isArray(specDTOS) && specDTOS.forEach(item=>{
+                const { selected } = item
+                let { id } = item.properties[selected]
+                productSpeci.push(id)
+            })
+
+            
+            let result = await this.$api.SetCartList({
+                num: number,
+                productId: productCode,
+                productSpecis: productSpeci.toString()
+            })
+
             uni.showToast({title: "已加入购物车"})
+
+
+            // console.log(goodsDetail)
+            
+            // let goods = { ...goodsDetail, number, selected: false }
+
+            // let { specDTOS } = goodsDetail
+            // Array.isArray(specDTOS) && specDTOS.forEach(item=>{
+            //     const { selected } = item
+            //     item.selectSpec = [ item.properties[selected] ]
+            // })
+
+            // console.log( JSON.stringify(goodsDetail.specDTOS),productSpeci,"specDTOS")
+
+            // let CARTLIST = uni.getStorageSync(constants.CARTLIST)
+            // if( !Array.isArray(CARTLIST) ){
+            //     CARTLIST = []
+            // }
+            // // 如果已经加入过了购物车
+            // else{
+            //     const len = CARTLIST.filter(item=>item.productCode === productCode)
+            //     if(len.length > 0){
+            //         return uni.showToast({title: "不要重复添加购物车"})
+            //     }
+            // }
+            // CARTLIST.push(goods)
+            // uni.setStorageSync(constants.CARTLIST, CARTLIST)
+            // uni.showToast({title: "已加入购物车"})
         },
 		//立即购买
 		buy(){
-			if(!this.selectSpecFlag){
-				return this.showSpec(()=>{
-					this.toConfirmation();
-				});
-			}
-			this.toConfirmation();
+            this.$store.dispatch('USER_LOGIN', ()=>{
+                if(!this.selectSpecFlag){
+                    return this.showSpec(()=>{
+                        this.toConfirmation();
+                    });
+                }
+                this.toConfirmation()
+            })
 		},
 		//商品评论
 		toRatings(){
@@ -431,7 +457,7 @@ export default {
             specDTOS = JSON.parse(JSON.stringify(specDTOS))
             Array.isArray(specDTOS) && specDTOS.forEach(item=>{
                 const { selected } = item
-                item.properties = [ item.properties[selected] ]
+                item.selectSpec = [ item.properties[selected] ]
             })
 
             let goods = { id, number, specDTOS }
@@ -888,6 +914,7 @@ page {
 			display: flex;
 			align-items: center;
 			font-size: 28upx;
+            position: relative;
 		}
 		.joinCart {
 			background-color: #f0b46c;

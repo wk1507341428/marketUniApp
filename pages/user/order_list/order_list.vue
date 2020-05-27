@@ -41,9 +41,13 @@
 					</view>
 					<view class="btns">
 						<block v-if="row.orderStatus=='1'"><view class="default" @tap="cancelOrder(row)">取消订单</view><view class="pay" @tap="toPayment(row)">付款</view></block>
-						<block v-if="row.type=='back'"><view class="default" @tap="remindDeliver(row)">提醒发货</view></block>
-						<block v-if="row.type=='unreceived'"><view class="default" @tap="showLogistics(row)">查看物流</view><view class="pay">确认收货</view><view class="pay">我要退货</view></block>
-						<block  v-if="row.orderStatus=='5'"><view @click="handleComment(row)" class="default">评价</view><view class="default">再次购买</view></block>
+						<block v-if="row.orderStatus=='2'"><view class="default" @tap="remindDeliver(row)">提醒发货</view></block>
+						<block v-if="row.orderStatus=='3'">
+                            <view class="default" @tap="showLogistics(row)">查看物流</view>
+                            <view class="pay">确认收货</view>
+                            <view class="pay">我要退货</view>
+                        </block>
+						<block v-if="row.orderStatus=='5'"><view @click="handleComment(row)" class="default">评价</view><view class="default">再次购买</view></block>
 						<block v-if="row.type=='completed'"><view class="default">再次购买</view></block>
 						<block v-if="row.type=='refunds'"><view class="default">查看进度</view></block>
 						<block v-if="row.orderStatus=='6'"><view class="default">已过期</view></block>
@@ -117,7 +121,7 @@ export default {
                 needTotalCount: true,
                 orderStatus,
                 pageNum,
-                pageSize: 5,
+                pageSize: 10,
                 customerId: uni.getStorageSync(this.$constants.CUSTOMERID)
             })
             const list = response.data
@@ -139,6 +143,7 @@ export default {
             // CANCLE(7,"取消");
         },
 		showType(tbIndex){
+            this.pageNum = 1
             this.tabbarIndex = tbIndex
             this.orderStatus = tbIndex
             this.GetOrderList((list)=>{
@@ -154,7 +159,26 @@ export default {
                 this.loadMoreText = "加载更多"
             })
         },
-		showLogistics(row){},
+        // 查看物流
+		showLogistics(row){
+            let { deliveryDTO, deliveryNo } = row
+            // console.log(row,"row",deliveryDTO)
+			uni.showModal({
+				title: '快递信息',
+				content: `快递公司：${deliveryDTO.deliveryName};快递单号：${deliveryNo}`,
+				confirmText: '复制单号',
+				success: res => {
+					uni.setClipboardData({
+					    data: `${deliveryNo}`,
+					    success: function () {
+					        uni.showToast({
+					        	title: '复制成功'
+					        })
+					    }
+					});
+				}
+			});
+        },
 		remindDeliver(row){
 			uni.showToast({
 				title:'已提醒商家发货'
@@ -190,25 +214,28 @@ export default {
 				
 			}
 		},
-		toPayment(row){
-			//本地模拟订单提交UI效果
-			uni.showLoading({
-				title:'正在获取订单...'
-			})
-			let paymentOrder = [];
-			paymentOrder.push(row);
-			setTimeout(()=>{
-				uni.setStorage({
-					key:'paymentOrder',
-					data:paymentOrder,
-					success: () => {
-						uni.hideLoading();
-						uni.navigateTo({
-							url:'../../pay/payment/payment?amount='+row.payment
-						})
-					}
-				})
-			},500)
+		async toPayment(row){
+            // let response = await this.$api.pay(row.orderId)
+			// console.log(JSON.parse(response.data))
+			// response = JSON.parse(response.data)
+			// uni.requestPayment({
+			// 	timeStamp: response.timeStamp,
+			// 	nonceStr:response.nonceStr,
+			// 	package: response.package,
+			// 	paySign:response.sign,
+			// 	signType:response.signType,
+			// 	complete(data){
+			// 		console.log(222,data)
+			// 	}
+            // })
+            this.$store.dispatch('USER_PAY',{
+                orderId:row.orderId,
+                callBack(data){
+                    uni.showToast({
+                    	title:"支付成功"
+                    })
+                }
+            })
 		},
         handleComment({ items }){
 			const { productCode, productPic } = items
